@@ -1,0 +1,23 @@
+
+targets:
+  $default:
+    builders:
+      http_client_generator|http_client_generator:
+        enabled: true
+        generate_for:
+          exclude:
+            - test
+            # - example
+          include:
+            # - example/*
+            - test/integration/*
+            - test/integration/**/*
+            
+builders:
+  http_client_generator:
+    import: "package:http_client_generator/http_client_generator.dart"
+    builder_factories: ["httpClientBuilder"]
+    build_extensions: {".dart": [".http_client.g.part"]}
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen|combining_builder"]
