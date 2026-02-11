@@ -7,7 +7,12 @@ import 'type_checker.dart';
 
 abstract final class Checker {
   static final method = TypeChecker.typeNamed(Method);
+
   static final body = TypeChecker.typeNamed(Body);
+
+  static final formField = TypeChecker.typeNamed(FormField);
+  static final formFields = TypeChecker.typeNamed(FormFields);
+
   static final query = TypeChecker.typeNamed(Query);
   static final queryAll = TypeChecker.typeNamed(QueryAll);
   static final fragment = TypeChecker.typeNamed(Fragment);
@@ -28,6 +33,8 @@ abstract final class Checker {
   static final uint8List = TypeChecker.fromUrl('dart:typed_data#Uint8List');
   static final future = TypeChecker.fromUrl('dart:async#Future');
   static final stream = TypeChecker.fromUrl('dart:async#Stream');
+  static final map = TypeChecker.fromUrl('dart:core#Map');
+  static final string = TypeChecker.fromUrl('dart:core#String');
 }
 
 extension AnnotatedOf on TypeChecker {

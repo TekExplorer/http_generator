@@ -1,3 +1,5 @@
+import 'package:analyzer/dart/element/nullability_suffix.dart'
+    show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:source_gen/source_gen.dart';
@@ -66,7 +68,8 @@ class JsonEncoderVisitor
         );
       }
     }
-    return '$varName.${toJson.name}(${genericArgumentFactories.join(', ')})';
+    final q = type.nullabilitySuffix == NullabilitySuffix.question ? '?' : '';
+    return '$varName$q.${toJson.name}(${genericArgumentFactories.join(', ')})';
   }
 
   @override
@@ -170,17 +173,5 @@ extension on DartType {
       isDartCoreInt ||
       isDartCoreDouble ||
       isDartCoreBool ||
-      isDartCoreNum ||
-      _isObjectSerializableToJson();
-
-  bool _isObjectSerializableToJson() {
-    if (this is InterfaceType) {
-      final type = this as InterfaceType;
-      final toJson = type.getMethod('toJson');
-      return toJson != null &&
-          !toJson.isStatic &&
-          toJson.formalParameters.isEmpty;
-    }
-    return false;
-  }
+      isDartCoreNum;
 }

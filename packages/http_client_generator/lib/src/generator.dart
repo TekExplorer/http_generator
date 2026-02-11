@@ -94,18 +94,18 @@ ${element.methods.map(methodImpl).join('\n')}
     return '''
   ${methodSignature(method)} {
     ${[
-      'Uri uri = baseUri.resolve(${modifyPath(path, method.formalParameters)});',
+      'Uri \$uri = baseUri.resolve(${modifyPath(path, method.formalParameters)});',
       if (hasQuery || fragment != null) [
-          'uri = uri.replace(', //
-          if (hasQuery) 'queryParameters: ${createQuery('uri', method.formalParameters)},', //
+          '\$uri = \$uri.replace(', //
+          if (hasQuery) 'queryParameters: ${createQuery('\$uri', method.formalParameters)},', //
           if (fragment != null) 'fragment: ${fragment.element.name},',
           ');',
         ].join('\n'),
     ].join('\n')}
 
-    final request = #{{http|AbortableRequest}}('$httpMethod', uri,${abortTrigger(method)});
-    ${ModifyRequest.apply('request', method)}
-    return \$send(request).then(#{{http|Response}}.fromStream).then((response) {
+    final \$request = #{{http|AbortableRequest}}('$httpMethod', \$uri,${abortTrigger(method)});
+    ${ModifyRequest.apply(r'$request', method)}
+    return \$send(\$request).then(#{{http|Response}}.fromStream).then((response) {
       return ${Coding.decodeResponse('response', futureType, decodingFactories(method))};
     });
   }
@@ -135,26 +135,6 @@ ${element.methods.map(methodImpl).join('\n')}
       'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
       element: cancel.element,
     );
-  }
-
-  Map<TypeParameterElement, String Function(ConverterContext)>
-  decodingFactories(MethodElement method) {
-    return <TypeParameterElement, String Function(ConverterContext)>{
-      for (final tp in method.typeParameters)
-        tp: (context) {
-          // myFunc<@TConverter() T>()
-          final converterAnnotation = Checker.jsonConverter
-              .firstAnnotationOfExact(tp);
-          if (converterAnnotation != null) {
-            return '${converterAnnotation.toCode()}.fromJson(${context.varName})';
-          }
-          throw InvalidGenerationSourceError(
-            'Generic type parameter `${tp.name}` must have a factory for deserialization. '
-            'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-            element: tp,
-          );
-        },
-    };
   }
 
   String modifyPath(
@@ -234,7 +214,7 @@ class ModifyRequest {
   }
 
   String modifyRequest(String request, MethodElement method) {
-    return requestBody(request, method);
+    return formFieldsBody(request, method) ?? requestBody(request, method);
   }
 
   String requestBody(String request, MethodElement method) {
@@ -276,6 +256,81 @@ class ModifyRequest {
     );
     return '$request.body = #{{dart:convert|jsonEncode}}($bodyEncodable);';
   }
+
+  String? formFieldsBody(String request, MethodElement method) {
+    final formFieldParameters = Checker.formField.annotatedOf(
+      method.formalParameters,
+    );
+    final formFieldsParameters = Checker.formFields.annotatedOf(
+      method.formalParameters,
+    );
+
+    if (formFieldParameters.isEmpty && formFieldsParameters.isEmpty) {
+      return null;
+    }
+    final lines = <String>[];
+    for (final param in formFieldParameters) {
+      final paramName = param.element.name!;
+      final encoded = Coding.bodyEncodable(
+        param.element.type,
+        ConverterContext(paramName, decodingFactories(method)),
+        Checker.jsonConverter.firstAnnotationOf(param.element),
+      );
+      final fieldName = param.annotation.read('name').stringValue;
+      lines.add('${escapeDartString(fieldName)}: $encoded,');
+    }
+    for (final param in formFieldsParameters) {
+      final type = param.element.type;
+      if (type is! InterfaceType) {
+        throw InvalidGenerationSourceError(
+          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
+          element: param.element,
+        );
+      }
+      final paramName = param.element.name!;
+
+      if (Checker.map.isAssignableFromType(type)) {
+        lines.add('...$paramName, /* is a map */');
+      } else if (param.element.type case InterfaceType type) {
+        final encoding = Coding.bodyEncodable(
+          type,
+          ConverterContext(param.element.name!, decodingFactories(method)),
+          Checker.jsonConverter.firstAnnotationOf(param.element),
+        );
+        lines.add('...$encoding,');
+      } else {
+        throw InvalidGenerationSourceError(
+          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
+          element: param.element,
+        );
+      }
+    }
+    return '''
+final \$fields = <String, Object?>{${lines.join('\n')}};
+\$fields.removeWhere((_, v) => v == 'null');
+$request.bodyFields = \$fields.map((k, v) => MapEntry(k, v.toString()));
+''';
+  }
+}
+
+Map<TypeParameterElement, String Function(ConverterContext)> decodingFactories(
+  MethodElement method,
+) {
+  return <TypeParameterElement, String Function(ConverterContext)>{
+    for (final tp in method.typeParameters)
+      tp: (context) {
+        // myFunc<@TConverter() T>()
+        final converterAnnotation = Checker.jsonConverter.firstAnnotationOf(tp);
+        if (converterAnnotation != null) {
+          return '${converterAnnotation.toCode()}.fromJson(${context.varName})';
+        }
+        throw InvalidGenerationSourceError(
+          'Generic type parameter `${tp.name}` must have a factory for deserialization. '
+          'Either provide a `@JsonConverter` annotation or avoid using generic types.',
+          element: tp,
+        );
+      },
+  };
 }
 
 class Coding {
@@ -283,7 +338,7 @@ class Coding {
     String response,
     DartType type,
     GenericFactories factories, [
-    DartObject? converter,
+    DartObject? jsonConverter,
   ]) {
     if (type is VoidType) return '';
     if (Checker.responseType.isExactlyType(type)) return response;
@@ -294,17 +349,18 @@ class Coding {
     return Coding().jsonDecoding(
       type,
       ConverterContext(json, factories),
-      converter,
+      jsonConverter,
     );
   }
 
+  // TODO: simplify
   static String bodyEncodable(
     DartType type,
     ConverterContext context,
-    DartObject? converter,
+    DartObject? jsonConverter,
   ) {
-    if (converter != null) {
-      return '${converter.toCode()}.toJson(${context.varName})';
+    if (jsonConverter != null) {
+      return '${jsonConverter.toCode()}.toJson(${context.varName})';
     }
     return type.acceptWithArgument(JsonEncoderVisitor(), context);
   }

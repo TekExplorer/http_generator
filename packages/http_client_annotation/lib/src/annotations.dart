@@ -27,6 +27,19 @@ final class Body {
   final bool raw;
 }
 
+const formFields = FormFields();
+
+@Target({TargetKind.parameter})
+final class FormFields {
+  const FormFields();
+}
+
+@Target({TargetKind.parameter})
+final class FormField {
+  const FormField(this.name);
+  final String name;
+}
+
 // A single query parameter, e.g. `?search=foo`
 @Target({TargetKind.parameter})
 final class Query {
@@ -36,12 +49,16 @@ final class Query {
 
 // Multiple query parameters, e.g. `?filter=name&filter=age`
 // serialized from an object
+const queryAll = QueryAll();
+
 @Target({TargetKind.parameter})
 final class QueryAll {
   const QueryAll();
 }
 
 // Fragment part of the URL, e.g. `#section1`
+const fragment = Fragment();
+
 @Target({TargetKind.parameter})
 final class Fragment {
   const Fragment();
@@ -60,14 +77,15 @@ final class Cancel {
 //   const MultiPart();
 // }
 
-// /// valid for [File] and [Uint8List] and [String]
-// @Target({TargetKind.parameter})
-// final class FilePart extends Part {
-//   const FilePart(super.name);
-// }
-
 // @Target({TargetKind.parameter})
 // final class Part {
 //   const Part(this.name);
+//   const factory Part.file(String name) = _FilePart;
 //   final String name;
+// }
+
+// /// valid for [File] and [Uint8List] and [String]
+// @Target({TargetKind.parameter})
+// final class _FilePart extends Part {
+//   const _FilePart(super.name);
 // }

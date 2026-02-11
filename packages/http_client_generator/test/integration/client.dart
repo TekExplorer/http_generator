@@ -110,6 +110,40 @@ abstract class A with _$A {
   @override
   @Get('/cancelable')
   Future<void> cancelable(@Cancel() Future<void> abortTrigger);
+
+  @override
+  @Post('/everything/{id}')
+  Future<List<Map<String, Gen<Data>>>> everything(
+    @Path('id') String id,
+    @Query('search') String search,
+    @Fragment() String fragment,
+    @Body() Gen<Map<String, Data>> body,
+    @Cancel() Future<void> abortTrigger,
+  );
+
+  @override
+  @Post('/fields')
+  Future<void> withFields(@formFields Map<String, String> fields);
+
+  @override
+  @Post('/fields/object')
+  Future<void> withFields2(@formFields Fields fields);
+
+  @override
+  @Post('/fields/generic')
+  Future<void> withFields3(@formFields GenFields<Stringy> fields);
+
+  @override
+  @Post('/fields')
+  Future<void> withFields4(
+    @FormField('f1') String field1,
+    @FormField('f2') String field2,
+    @FormField('f3') int field3,
+    @FormField('f4') String? field4,
+    @FormField('f5') Data? field5,
+    @formFields Fields grouped,
+    @formFields Map<String, String> rest,
+  );
 }
 
 void x() {
@@ -141,4 +175,21 @@ class Gen<T> {
   Map<String, dynamic> toJson(Object? Function(T value) toJsonT) => {
     'value': toJsonT(value),
   };
+}
+
+class Fields {
+  Map<String, dynamic> toJson() => {};
+}
+
+class GenFields<T> {
+  GenFields(this.value);
+  final T value;
+
+  Map<String, String> toJson(String Function(T value) toJsonT) => {
+    'value': toJsonT(value),
+  };
+}
+
+extension type Stringy(String value) implements String {
+  String toJson() => value;
 }
