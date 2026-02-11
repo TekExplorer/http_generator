@@ -1,23 +1,11 @@
-import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:analyzer_buffer/analyzer_buffer.dart';
 import 'package:collection/collection.dart';
 import 'package:source_gen/source_gen.dart';
+import 'package:source_helper/source_helper.dart';
 
-typedef GenericFactories =
-    Map<TypeParameterElement, String Function(ConverterContext)>;
-typedef Factories = Map<DartType, String Function(ConverterContext)>;
-
-class ConverterContext {
-  ConverterContext(this.varName, this.factories);
-
-  final String varName;
-  final GenericFactories factories;
-  ConverterContext withVar(String newVarName) {
-    return ConverterContext(newVarName, factories);
-  }
-}
+import 'coder_shared.dart';
 
 class JsonDecoderVisitor
     extends TypeVisitorWithArgument<String, ConverterContext> {
@@ -72,12 +60,11 @@ class JsonDecoderVisitor
           element: fromJson,
         );
       }
-      final genericArgumentFactories = StringBuffer();
+      final genericArgumentFactories = <String>[];
       if (type.typeArguments.isNotEmpty &&
           fromJson.formalParameters.length > 1) {
         final genericParams = fromJson.formalParameters.skip(1).toList();
-        for (final param in genericParams) {
-          final name = param.name;
+        for (final (i, param) in genericParams.indexed) {
           final factoryType = param.type;
           if (factoryType is! FunctionType) {
             throw InvalidGenerationSourceError(
@@ -85,38 +72,42 @@ class JsonDecoderVisitor
               element: param,
             );
           }
-          genericArgumentFactories.write(', $name($varName)');
+          genericArgumentFactories.add(
+            '(object) => ${nest(type.typeArguments[i], 'object', argument)}',
+          );
         }
       }
-      return '${type.toCode()}.${fromJson.name}($varName as ${fromJson.formalParameters.first.type.toCode()}$genericArgumentFactories)';
+      return '${type.toCode()}.${fromJson.name}($varName as ${fromJson.formalParameters.first.type.toCode()}, ${genericArgumentFactories.join(', ')})';
     }
   }
 
   @override
   String visitRecordType(RecordType type, ConverterContext argument) {
-    if (type.positionalFields.isEmpty && type.namedFields.isEmpty) {
-      return '()';
-    } else if (type.positionalFields.isNotEmpty &&
-        type.namedFields.isNotEmpty) {
+    if (type.positionalFields.isEmpty && type.namedFields.isEmpty) return '()';
+
+    if (type.positionalFields.isNotEmpty && type.namedFields.isNotEmpty) {
+      // TODO: deserialize maps that have numbers as keys into a mixed record?
       throw InvalidGenerationSourceError(
         'Records with both positional and named fields are not supported. Use a custom decoder instead.',
         element: type.element,
       );
     }
-    final varName = argument.varName;
     final buffer = StringBuffer();
     for (final (index, field) in type.positionalFields.indexed) {
       buffer.write(
         // TODO: index may need adjusting by 1
-        '${field.type.acceptWithArgument(this, '$varName[\$$index]')}, ',
+        '${nest(field.type, 'map[$index]', argument)}, ',
       );
     }
     for (final field in type.namedFields) {
-      buffer.write(
-        '${field.name}: ${field.type.acceptWithArgument(this, "$varName['${field.name}']")}, ',
-      );
+      final fieldName = 'map[${escapeDartString(field.name)}]';
+      buffer.write('${field.name}: ${nest(field.type, fieldName, argument)}, ');
     }
-    return '($buffer)';
+
+    return '''(){
+      final map = ${argument.varName} as #{{dart:core|Map}};
+      return ($buffer);
+    }()''';
   }
 
   @override
@@ -138,7 +129,7 @@ class JsonDecoderVisitor
     if (factory != null) return factory(argument);
 
     throw InvalidGenerationSourceError(
-      'Generic type parameters must provide a factory for deserialization.',
+      'Generic type parameter `${type.element.name}` must provide a factory for deserialization.',
       element: type.element,
     );
   }

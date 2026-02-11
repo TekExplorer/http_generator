@@ -7,7 +7,10 @@ import 'package:http_client_annotation/http_client_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
-import 'json_decoder_visitor.dart';
+import 'coders/coder_shared.dart';
+import 'coders/json_decoder_visitor.dart';
+import 'coders/json_encoder_visitor.dart';
+import 'type_checker/checkers.dart';
 
 class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
   HttpClientGenerator() : super(inPackage: 'http_client_annotation');
@@ -30,32 +33,15 @@ class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
       header: '// ignore_for_file: type=lint, type=warning\n',
     );
     final baseUrl = annotation.peek('baseUrl')?.stringValue;
-    final className = '_${element.name}';
-    String buildConstructor() {
-      final constructor = element.getNamedConstructor('_');
-      if (constructor == null || constructor.isFactory) return '$className()';
-
-      final formals = constructor.formalParameters.toCode(Formal.superFormal);
-      return '$className($formals) : super._()';
-    }
 
     buffer.write('''
 mixin _\$${element.name} {
   @#{{meta|protected}}
-  Future<#{{http|StreamedResponse}}> \$send(#{{http|BaseRequest}} request) async {
-    final client = #{{http|Client}}();
-    try {
-      return await client.send(request);
-    } finally {
-      client.close();
-    }
+  Future<#{{http|StreamedResponse}}> \$send(#{{http|BaseRequest}} request) {
+    return request.send();
   }
   String get baseUrl${baseUrl != null ? " => ${escapeDartString(baseUrl)}" : ''};
   Uri get baseUri => Uri.parse(baseUrl);
-}
-
-class $className extends ${element.name} {
-  ${buildConstructor()};
 
 ${element.methods.map(methodImpl).join('\n')}
 }
@@ -64,13 +50,10 @@ ${element.methods.map(methodImpl).join('\n')}
     return buffer.toString();
   }
 
-  static const methodTypeChecker = TypeChecker.typeNamed(Method);
-
   String methodImpl(MethodElement method) {
-    final methodAnnotation = methodTypeChecker.firstAnnotationOfExact(method);
-    if (methodAnnotation == null) {
-      return '';
-    }
+    final methodAnnotation = Checker.method.firstAnnotationOf(method);
+    if (methodAnnotation == null) return '';
+
     final returnType = method.returnType;
     if (!returnType.isDartAsyncFuture) {
       throw InvalidGenerationSourceError(
@@ -78,13 +61,6 @@ ${element.methods.map(methodImpl).join('\n')}
         element: method,
       );
     }
-    final futureType = (returnType as InterfaceType).typeArguments.first;
-    assert(
-      futureType is InterfaceType ||
-          futureType is RecordType ||
-          futureType is DynamicType ||
-          futureType is VoidType,
-    );
 
     final methodReader = ConstantReader(methodAnnotation);
     final httpMethod = methodReader.peek('method')?.stringValue;
@@ -95,70 +71,242 @@ ${element.methods.map(methodImpl).join('\n')}
         element: method,
       );
     }
-    final jsonConverter = const TypeChecker.fromUrl(
-      'package:json_serializer_annotation/json_serializer_annotation.dart#JsonConverter',
+
+    final futureType = (returnType as InterfaceType).typeArguments.first;
+    assert(
+      futureType is InterfaceType ||
+          futureType is RecordType ||
+          futureType is DynamicType ||
+          futureType is VoidType,
     );
-    String factoryForTypeParameter(
-      TypeParameterElement tp,
-      ConverterContext context,
-    ) {
-      // myFunc<@TConverter() T>()
-      final converterAnnotation = jsonConverter.firstAnnotationOfExact(tp);
-      if (converterAnnotation != null) {
-        return '${converterAnnotation.toCode()}.fromJson(${context.varName})';
-      }
+    final hasQuery = hasQueryParameters(method.formalParameters);
+
+    final fragments = Checker.fragment.annotatedOf(method.formalParameters);
+    if (fragments.isNotEmpty && fragments.length > 1) {
       throw InvalidGenerationSourceError(
-        'Generic type parameter `${tp.name}` must have a factory for deserialization. '
-        'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-        element: tp,
+        'Method `${method.name}` has multiple parameters annotated with `@Fragment`. '
+        'Only one `@Fragment` parameter is allowed per method.',
+        element: method,
       );
     }
+    final fragment = fragments.firstOrNull;
 
-    final factories = <TypeParameterElement, String Function(ConverterContext)>{
-      for (final tp in method.typeParameters)
-        tp: (context) => factoryForTypeParameter(tp, context),
-    };
-    final converter = switch (futureType.element) {
-      final element? => jsonConverter.firstAnnotationOf(element),
-      null => null,
-    };
     return '''
   ${methodSignature(method)} {
-    final request = #{{http|Request}}('$httpMethod', baseUri.resolve(${escapeDartString(path)}));
+    ${[
+      'Uri uri = baseUri.resolve(${modifyPath(path, method.formalParameters)});',
+      if (hasQuery || fragment != null) [
+          'uri = uri.replace(', //
+          if (hasQuery) 'queryParameters: ${createQuery('uri', method.formalParameters)},', //
+          if (fragment != null) 'fragment: ${fragment.element.name},',
+          ');',
+        ].join('\n'),
+    ].join('\n')}
+
+    final request = #{{http|AbortableRequest}}('$httpMethod', uri,${abortTrigger(method)});
+    ${ModifyRequest.apply('request', method)}
     return \$send(request).then(#{{http|Response}}.fromStream).then((response) {
-      ${futureType is VoidType ? 'return;' : 'return ${responseDecoding(futureType, factories, converter)};'}
+      return ${Coding.decodeResponse('response', futureType, decodingFactories(method))};
     });
   }
 ''';
   }
 
-  String methodSignature(MethodElement method) {
-    return '${method.returnType.toCode()} ${method.name}${typeParametersToCode(method.typeParameters)}(${method.formalParameters.toCode()})';
+  String abortTrigger(MethodElement method) {
+    final cancels = Checker.cancel.annotatedOf(method.formalParameters);
+    if (cancels.isEmpty) return '';
+    if (cancels.length > 1) {
+      throw InvalidGenerationSourceError(
+        'Method `${method.name}` has multiple parameters annotated with `@Cancel`. '
+        'Only one `@Cancel` parameter is allowed per method.',
+        element: method,
+      );
+    }
+    final cancel = cancels.single;
+    final type = cancel.element.type;
+    final name = cancel.element.name;
+    if (Checker.cancelToken.isAssignableFromType(type)) {
+      final q = type.isNullableType ? '?' : '';
+      return 'abortTrigger: $name$q.whenCancel';
+    } else if (Checker.future.isAssignableFromType(type)) {
+      return 'abortTrigger: $name';
+    }
+    throw InvalidGenerationSourceError(
+      'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
+      element: cancel.element,
+    );
   }
 
-  String typeParametersToCode(List<TypeParameterElement> typeParameters) {
-    if (typeParameters.isEmpty) return '';
-    return '<${typeParameters.map((tp) {
-      final bound = tp.bound != null ? ' extends ${tp.bound!.toCode()}' : '';
-      return '${tp.name}$bound';
-    }).join(', ')}>';
+  Map<TypeParameterElement, String Function(ConverterContext)>
+  decodingFactories(MethodElement method) {
+    return <TypeParameterElement, String Function(ConverterContext)>{
+      for (final tp in method.typeParameters)
+        tp: (context) {
+          // myFunc<@TConverter() T>()
+          final converterAnnotation = Checker.jsonConverter
+              .firstAnnotationOfExact(tp);
+          if (converterAnnotation != null) {
+            return '${converterAnnotation.toCode()}.fromJson(${context.varName})';
+          }
+          throw InvalidGenerationSourceError(
+            'Generic type parameter `${tp.name}` must have a factory for deserialization. '
+            'Either provide a `@JsonConverter` annotation or avoid using generic types.',
+            element: tp,
+          );
+        },
+    };
   }
 
-  final responseTypeChecker = TypeChecker.fromUrl(
-    'package:http/src/response.dart#Response',
-  );
-  final uint8ListTypeChecker = TypeChecker.fromUrl('dart:typed_data#Uint8List');
-  String responseDecoding(
+  String modifyPath(
+    String path,
+    List<FormalParameterElement> formalParameters,
+  ) {
+    final pathParameters = Checker.path.annotatedOf(formalParameters);
+    final map = {
+      for (final param in pathParameters)
+        param.annotation.read('value').stringValue: param,
+    };
+
+    return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
+      match,
+    ) {
+      final key = match.group(1)!;
+      final param = map[key];
+      if (param == null) return match.group(0)!;
+      return '\${${param.element.name}}';
+    });
+  }
+
+  //==========================//
+  bool hasQueryParameters(List<FormalParameterElement> formalParameters) {
+    final queryParameters = Checker.query.annotatedOf(formalParameters);
+    final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
+    return queryParameters.isNotEmpty || queryAllParameters.isNotEmpty;
+  }
+
+  String createQuery(
+    String uri,
+    List<FormalParameterElement> formalParameters,
+  ) {
+    final queryParameters = Checker.query.annotatedOf(formalParameters);
+    final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
+
+    return '''{
+    ...$uri.queryParametersAll,
+    ${queryAllParameters.map((param) {
+      if (param.element.type.isDartCoreMap) return '...${param.element.name!},';
+      if (param.element.type case InterfaceType type) {
+        // TODO: more robust query serialization
+        final encode = type.methods.where((m) => m.name == 'toJson' || m.name == 'toMap');
+        for (final m in encode) {
+          if (m.returnType.isDartCoreMap && m.formalParameters.isEmpty) {
+            return '...${param.element.name!}.${m.name}(),';
+          }
+        }
+        // TODO: possibly allow arguments later
+        throw InvalidGenerationSourceError('Parameter `${param.element.name}` annotated with `@QueryAll` must be of type `Map<String, dynamic>` or provide a `toJson` or `toMap` method that returns a `Map<String, dynamic>` without arguments.', element: param.element);
+      }
+    }).join('\n')}
+    ${queryParameters.map((param) {
+      final queryKey = param.annotation.read('name').stringValue;
+      final paramName = param.element.name!;
+      return '${escapeDartString(queryKey)}: $paramName,';
+    }).join('\n')}
+  }''';
+  }
+}
+
+String methodSignature(MethodElement method) {
+  return '${method.returnType.toCode()} ${method.name}${typeParametersToCode(method.typeParameters)}(${method.formalParameters.toCode()})';
+}
+
+String typeParametersToCode(List<TypeParameterElement> typeParameters) {
+  if (typeParameters.isEmpty) return '';
+  return '<${typeParameters.map((tp) {
+    final bound = tp.bound != null ? ' extends ${tp.bound!.toCode()}' : '';
+    return '${tp.name}$bound';
+  }).join(', ')}>';
+}
+
+class ModifyRequest {
+  static String apply(String request, MethodElement method) {
+    return ModifyRequest().modifyRequest(request, method);
+  }
+
+  String modifyRequest(String request, MethodElement method) {
+    return requestBody(request, method);
+  }
+
+  String requestBody(String request, MethodElement method) {
+    final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
+    if (bodyParameters.isEmpty) return '';
+
+    if (bodyParameters.length > 1) {
+      throw InvalidGenerationSourceError(
+        'Method `${method.name}` has multiple parameters annotated with `@Body`. '
+        'Only one `@Body` parameter is allowed per method.',
+        element: method,
+      );
+    }
+
+    final param = bodyParameters.single;
+
+    final bool raw = param.annotation.read('raw').boolValue;
+    if (raw) return '$request.body = ${param.element.name}.toString();';
+
+    final bodyEncodable = Coding.bodyEncodable(
+      param.element.type,
+      ConverterContext(param.element.name!, {
+        for (final tp in method.typeParameters)
+          tp: (context) {
+            // myFunc<@TConverter() T>()
+            final converterAnnotation = Checker.jsonConverter
+                .firstAnnotationOfExact(tp);
+            if (converterAnnotation != null) {
+              return '$request.body = #{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}));';
+            }
+            throw InvalidGenerationSourceError(
+              'Generic type parameter `${tp.name}` must have a factory for serialization. '
+              'Either provide a `@JsonConverter` annotation or avoid using generic types.',
+              element: tp,
+            );
+          },
+      }),
+      Checker.jsonConverter.firstAnnotationOf(param.element),
+    );
+    return '$request.body = #{{dart:convert|jsonEncode}}($bodyEncodable);';
+  }
+}
+
+class Coding {
+  static String decodeResponse(
+    String response,
     DartType type,
-    GenericFactories factories,
+    GenericFactories factories, [
+    DartObject? converter,
+  ]) {
+    if (type is VoidType) return '';
+    if (Checker.responseType.isExactlyType(type)) return response;
+    if (Checker.uint8List.isExactlyType(type)) return '$response.bodyBytes';
+    if (type.isDartCoreString) return '$response.body';
+
+    final json = '#{{dart:convert|jsonDecode}}($response.body)';
+    return Coding().jsonDecoding(
+      type,
+      ConverterContext(json, factories),
+      converter,
+    );
+  }
+
+  static String bodyEncodable(
+    DartType type,
+    ConverterContext context,
     DartObject? converter,
   ) {
-    if (responseTypeChecker.isExactlyType(type)) return 'response';
-    if (uint8ListTypeChecker.isExactlyType(type)) return 'response.bodyBytes';
-    if (type.isDartCoreString) return 'response.body';
-
-    final json = '#{{dart:convert|jsonDecode}}(response.body)';
-    return jsonDecoding(type, ConverterContext(json, factories), converter);
+    if (converter != null) {
+      return '${converter.toCode()}.toJson(${context.varName})';
+    }
+    return type.acceptWithArgument(JsonEncoderVisitor(), context);
   }
 
   String jsonDecoding(
@@ -170,6 +318,17 @@ ${element.methods.map(methodImpl).join('\n')}
       return '${converter.toCode()}.fromJson(${context.varName})';
     }
     return type.acceptWithArgument(JsonDecoderVisitor(), context);
+  }
+
+  String jsonEncoding(
+    DartType type,
+    ConverterContext context,
+    DartObject? converter,
+  ) {
+    if (converter != null) {
+      return '${converter.toCode()}.toJson(${context.varName})';
+    }
+    return type.acceptWithArgument(JsonEncoderVisitor(), context);
   }
 }
 

@@ -20,9 +20,6 @@ part 'a.g.dart';
 
 @RestClient('http://example.com')
 abstract class A with _$A {
-  factory A() = _A;
-  A._();
-
   @Method('GET', '/response')
   Future<http.Response> getResponse();
 
@@ -51,7 +48,7 @@ class Data {
         'test_package|lib/a.http_client.g.part': decodedMatches(
           predicate<String>((value) {
             print(value);
-            return value.contains("class _A extends A") &&
+            return value.contains(r'mixin _$A') &&
                 value.contains("String get baseUrl => 'http://example.com';");
           }),
         ),
