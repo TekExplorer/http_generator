@@ -136,11 +136,11 @@ abstract class A with _$A {
   @override
   @Post('/fields')
   Future<void> withFields4(
-    @FormField('f1') String field1,
-    @FormField('f2') String field2,
-    @FormField('f3') int field3,
-    @FormField('f4') String? field4,
-    @FormField('f5') Data? field5,
+    @Field('f1') String field1,
+    @Field('f2') String field2,
+    @Field('f3') int field3,
+    @Field('f4') String? field4,
+    @Field('f5') Data? field5,
     @formFields Fields grouped,
     @formFields Map<String, String> rest,
   );

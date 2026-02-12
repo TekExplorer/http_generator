@@ -8,16 +8,21 @@ import 'type_checker.dart';
 abstract final class Checker {
   static final method = TypeChecker.typeNamed(Method);
 
-  static final body = TypeChecker.typeNamed(Body);
-
-  static final formField = TypeChecker.typeNamed(FormField);
-  static final formFields = TypeChecker.typeNamed(FormFields);
+  static final path = TypeChecker.typeNamed(Path);
 
   static final query = TypeChecker.typeNamed(Query);
   static final queryAll = TypeChecker.typeNamed(QueryAll);
+
   static final fragment = TypeChecker.typeNamed(Fragment);
 
-  static final path = TypeChecker.typeNamed(Path);
+  static final body = TypeChecker.typeNamed(Body);
+
+  static final field = TypeChecker.typeNamed(Field);
+  static final fields = TypeChecker.typeNamed(Fields);
+
+  static final headers = TypeChecker.typeNamed(Headers);
+
+  // static final filePart = TypeChecker.typeNamed(FilePart);
 
   static final cancel = TypeChecker.typeNamed(Cancel);
 

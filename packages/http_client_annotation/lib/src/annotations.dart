@@ -27,16 +27,42 @@ final class Body {
   final bool raw;
 }
 
-const formFields = FormFields();
+/// Marks a method as a multipart request.
+const multipart = Multipart();
 
-@Target({TargetKind.parameter})
-final class FormFields {
-  const FormFields();
+/// Marks a method as a multipart request.
+@Target({TargetKind.method})
+final class Multipart {
+  const Multipart();
 }
 
+// figure out dart docs templates
+const formFields = Fields();
+
+/// Multiple form fields, e.g. `name=John&age=30`
+///
+/// Object must be or serialize to a [Map<String, Object?>], where the value can be a [String], a [FilePart], or a [http.MultipartFile].
+///
+/// Any other type will be converted to a string using [toString], unless a custom converter is provided.
+///
+/// Files are only supported for multipart requests, and will be ignored otherwise.
+/// Multipart requests must be indicated with the [multipart] annotation.
 @Target({TargetKind.parameter})
-final class FormField {
-  const FormField(this.name);
+final class Fields {
+  const Fields();
+}
+
+/// A single form field, e.g. `name=John`
+///
+/// The value can be a [String], a [FilePart], or a [http.MultipartFile].
+///
+/// Any other type will be converted to a string using [toString], unless a custom converter is provided.
+///
+/// Files are only supported for multipart requests, and will be ignored otherwise.
+/// Multipart requests must be indicated with the [multipart] annotation.
+@Target({TargetKind.parameter})
+final class Field {
+  const Field(this.name);
   final String name;
 }
 
@@ -56,36 +82,34 @@ final class QueryAll {
   const QueryAll();
 }
 
-// Fragment part of the URL, e.g. `#section1`
+/// Fragment part of the URL, e.g. `#section1`
 const fragment = Fragment();
 
+/// Fragment part of the URL, e.g. `#section1`
 @Target({TargetKind.parameter})
 final class Fragment {
   const Fragment();
 }
 
+/// Static headers to be added to the request.
+@Target({TargetKind.method})
+final class Headers {
+  const Headers(this.headers);
+  final Map<String, String> headers;
+}
+
+/// Used to cancel an ongoing request.
+///
+/// Only valid on parameters of type [Future<void>] or CancelToken (from dio).
+///
+/// If canceled, the method will throw a [http.RequestAbortedException]
+///
+/// Consider using [Completer] or [Future.delayed] to trigger the cancellation at a later time.
+///
+/// Multiple cancel parameters will be combined with [Future.any], so the request will be canceled if any of them is triggered.
+///
+/// Prefer to have only one cancel parameter per method for clarity.
 @Target({TargetKind.parameter})
 final class Cancel {
   const Cancel();
 }
-
-//// @Post('/upload')
-// @MultiPart()
-// Future<void> uploadFile(@Part('file') Uint8List file, @Part('description') String description);
-// @Target({TargetKind.method})
-// final class MultiPart {
-//   const MultiPart();
-// }
-
-// @Target({TargetKind.parameter})
-// final class Part {
-//   const Part(this.name);
-//   const factory Part.file(String name) = _FilePart;
-//   final String name;
-// }
-
-// /// valid for [File] and [Uint8List] and [String]
-// @Target({TargetKind.parameter})
-// final class _FilePart extends Part {
-//   const _FilePart(super.name);
-// }

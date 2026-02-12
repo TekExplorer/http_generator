@@ -28,16 +28,14 @@ class JsonDecoderVisitor
     } else if (type.isDartCoreBool) {
       return '$varName as #{{dart:core|bool}}';
     } else if (type.isDartCoreList) {
-      final listType = type.typeArguments.first;
+      final listType = type.typeArguments.single;
       return '($varName as #{{dart:core|List}}).map((e) => ${nest(listType, 'e', argument)}).toList()';
     } else if (type.isDartCoreMap) {
-      final mapType = type.typeArguments;
-      final keyType = mapType[0];
-      final valueType = mapType[1];
+      final [keyType, valueType] = type.typeArguments;
       if (!keyType.isDartCoreString) {
         throw InvalidGenerationSourceError('Only Map<String, V> is supported.');
       }
-      return '($varName as #{{dart:core|Map}}).map((k, v) => MapEntry(k as #{{dart:core|String}}, ${nest(valueType, 'v', argument)}))';
+      return '($varName as #{{dart:core|Map}}).map((k, v) => MapEntry(k, ${nest(valueType, 'v', argument)}))';
     } else {
       final fromJsonConstructor = type.element.constructors.firstWhereOrNull(
         (c) => c.name == 'fromJson' || c.name == 'fromMap',
@@ -96,16 +94,16 @@ class JsonDecoderVisitor
     for (final (index, field) in type.positionalFields.indexed) {
       buffer.write(
         // TODO: index may need adjusting by 1
-        '${nest(field.type, 'map[$index]', argument)}, ',
+        '${nest(field.type, '\$map[$index]', argument)}, ',
       );
     }
     for (final field in type.namedFields) {
-      final fieldName = 'map[${escapeDartString(field.name)}]';
+      final fieldName = '\$map[${escapeDartString(field.name)}]';
       buffer.write('${field.name}: ${nest(field.type, fieldName, argument)}, ');
     }
 
     return '''(){
-      final map = ${argument.varName} as #{{dart:core|Map}};
+      final \$map = ${argument.varName} as #{{dart:core|Map}};
       return ($buffer);
     }()''';
   }

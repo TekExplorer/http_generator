@@ -102,7 +102,7 @@ ${element.methods.map(methodImpl).join('\n')}
           ');',
         ].join('\n'),
     ].join('\n')}
-
+    // final \$request = #{{http_client_annotation|createRequest}}('$httpMethod', \$uri,${abortTrigger(method)});
     final \$request = #{{http|AbortableRequest}}('$httpMethod', \$uri,${abortTrigger(method)});
     ${ModifyRequest.apply(r'$request', method)}
     return \$send(\$request).then(#{{http|Response}}.fromStream).then((response) {
@@ -115,26 +115,25 @@ ${element.methods.map(methodImpl).join('\n')}
   String abortTrigger(MethodElement method) {
     final cancels = Checker.cancel.annotatedOf(method.formalParameters);
     if (cancels.isEmpty) return '';
-    if (cancels.length > 1) {
-      throw InvalidGenerationSourceError(
-        'Method `${method.name}` has multiple parameters annotated with `@Cancel`. '
-        'Only one `@Cancel` parameter is allowed per method.',
-        element: method,
-      );
+
+    final futures = <String>[];
+    for (final cancel in cancels) {
+      final type = cancel.element.type;
+      final name = cancel.element.name!;
+      if (Checker.cancelToken.isAssignableFromType(type)) {
+        futures.add('$name.whenCancel');
+      } else if (Checker.future.isAssignableFromType(type)) {
+        futures.add(name);
+      } else {
+        throw InvalidGenerationSourceError(
+          'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
+          element: cancel.element,
+        );
+      }
     }
-    final cancel = cancels.single;
-    final type = cancel.element.type;
-    final name = cancel.element.name;
-    if (Checker.cancelToken.isAssignableFromType(type)) {
-      final q = type.isNullableType ? '?' : '';
-      return 'abortTrigger: $name$q.whenCancel';
-    } else if (Checker.future.isAssignableFromType(type)) {
-      return 'abortTrigger: $name';
-    }
-    throw InvalidGenerationSourceError(
-      'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
-      element: cancel.element,
-    );
+
+    if (futures.length == 1) return 'abortTrigger: ${futures.single}';
+    return 'abortTrigger: #{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
   }
 
   String modifyPath(
@@ -210,14 +209,38 @@ String typeParametersToCode(List<TypeParameterElement> typeParameters) {
 
 class ModifyRequest {
   static String apply(String request, MethodElement method) {
-    return ModifyRequest().modifyRequest(request, method);
+    return ModifyRequest(request, method).modifyRequest();
   }
 
-  String modifyRequest(String request, MethodElement method) {
-    return formFieldsBody(request, method) ?? requestBody(request, method);
-  }
+  ModifyRequest(this.request, this.method);
+  final String request;
+  final MethodElement method;
 
-  String requestBody(String request, MethodElement method) {
+  // bool validate() {
+  //   final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
+
+  //   final formFieldParameters = Checker.field.annotatedOf(
+  //     method.formalParameters,
+  //   );
+  //   final formFieldsParameters = Checker.fields.annotatedOf(
+  //     method.formalParameters,
+  //   );
+
+  //   if (bodyParameters.isNotEmpty &&
+  //       (formFieldParameters.isNotEmpty || formFieldsParameters.isNotEmpty)) {
+  //     throw InvalidGenerationSourceError(
+  //       'Method `${method.name}` cannot have parameters annotated with both `@Body` and `@FormField`/`@FormFields`.',
+  //       element: method,
+  //     );
+  //   }
+
+  //   return true;
+  // }
+
+  String modifyRequest() =>
+      multipartRequestFields() ?? formFieldsBody() ?? requestBody();
+
+  String requestBody() {
     final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
     if (bodyParameters.isEmpty) return '';
 
@@ -257,60 +280,72 @@ class ModifyRequest {
     return '$request.body = #{{dart:convert|jsonEncode}}($bodyEncodable);';
   }
 
-  String? formFieldsBody(String request, MethodElement method) {
-    final formFieldParameters = Checker.formField.annotatedOf(
-      method.formalParameters,
-    );
-    final formFieldsParameters = Checker.formFields.annotatedOf(
-      method.formalParameters,
-    );
+  String? formFieldsBody() {
+    return '$request.bodyFields = ${defineFields(method)};';
+  }
 
-    if (formFieldParameters.isEmpty && formFieldsParameters.isEmpty) {
-      return null;
+  /// Only for multipart requests, adds fields and files to the request body.
+  String? multipartRequestFields() {
+    var fields = defineFields(method);
+    if (fields == null) return null;
+    return '''
+  final \$fields = $fields;
+  $request.fields.addAll(\$fields.fields);
+  $request.files.addAll(\$fields.files.entries.map((e) => e.value.toMultipartFile(e.key)));
+''';
+  }
+}
+
+/// returns a `({Map<String, String> fields, Map<String, FilePart> files})`
+String? defineFields(MethodElement method) {
+  final formFieldParameters = Checker.field.annotatedOf(
+    method.formalParameters,
+  );
+  final formFieldsParameters = Checker.fields.annotatedOf(
+    method.formalParameters,
+  );
+
+  if (formFieldParameters.isEmpty && formFieldsParameters.isEmpty) {
+    return null;
+  }
+  final lines = <String>[];
+  for (final param in formFieldParameters) {
+    final paramName = param.element.name!;
+    final encoded = Coding.bodyEncodable(
+      param.element.type,
+      ConverterContext(paramName, decodingFactories(method)),
+      Checker.jsonConverter.firstAnnotationOf(param.element),
+    );
+    final fieldName = param.annotation.read('name').stringValue;
+    lines.add('${escapeDartString(fieldName)}: $encoded,');
+  }
+  for (final param in formFieldsParameters) {
+    final type = param.element.type;
+    if (type is! InterfaceType) {
+      throw InvalidGenerationSourceError(
+        'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
+        element: param.element,
+      );
     }
-    final lines = <String>[];
-    for (final param in formFieldParameters) {
-      final paramName = param.element.name!;
-      final encoded = Coding.bodyEncodable(
-        param.element.type,
+    final paramName = param.element.name!;
+
+    if (Checker.map.isAssignableFromType(type)) {
+      lines.add(paramName);
+    } else if (param.element.type case InterfaceType type) {
+      final encoding = Coding.bodyEncodable(
+        type,
         ConverterContext(paramName, decodingFactories(method)),
         Checker.jsonConverter.firstAnnotationOf(param.element),
       );
-      final fieldName = param.annotation.read('name').stringValue;
-      lines.add('${escapeDartString(fieldName)}: $encoded,');
+      lines.add(encoding);
+    } else {
+      throw InvalidGenerationSourceError(
+        'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
+        element: param.element,
+      );
     }
-    for (final param in formFieldsParameters) {
-      final type = param.element.type;
-      if (type is! InterfaceType) {
-        throw InvalidGenerationSourceError(
-          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
-          element: param.element,
-        );
-      }
-      final paramName = param.element.name!;
-
-      if (Checker.map.isAssignableFromType(type)) {
-        lines.add('...$paramName, /* is a map */');
-      } else if (param.element.type case InterfaceType type) {
-        final encoding = Coding.bodyEncodable(
-          type,
-          ConverterContext(param.element.name!, decodingFactories(method)),
-          Checker.jsonConverter.firstAnnotationOf(param.element),
-        );
-        lines.add('...$encoding,');
-      } else {
-        throw InvalidGenerationSourceError(
-          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
-          element: param.element,
-        );
-      }
-    }
-    return '''
-final \$fields = <String, Object?>{${lines.join('\n')}};
-\$fields.removeWhere((_, v) => v == 'null');
-$request.bodyFields = \$fields.map((k, v) => MapEntry(k, v.toString()));
-''';
   }
+  return '#{{http_client_annotation|mapToFields}}({${lines.map((line) => '...$line,').join('\n')}})';
 }
 
 Map<TypeParameterElement, String Function(ConverterContext)> decodingFactories(
