@@ -37,12 +37,12 @@ Add the packages to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  http_annotation: ^1.0.0
-  http: ^1.0.0
+  http_annotation: ^0.0.1
+  http: ^1.6.0
 
 dev_dependencies:
-  http_generator: ^1.0.0
-  build_runner: ^2.4.0
+  http_generator: ^0.0.1
+  build_runner: ^2.11.1
 ```
 
 ## Usage
@@ -62,16 +62,19 @@ abstract class ApiClient with _$ApiClient {
   final http.Client client;
 
   @override
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
+  Future<StreamedResponse> $send(BaseRequest request) {
     return client.send(request);
   }
 
+  @override
   @Get('/users/{id}')
   Future<User> getUser(@Path('id') String id);
 
+  @override
   @Post('/users')
   Future<User> createUser(@Body() User user);
 
+  @override
   @Get('/users')
   Future<List<User>> getUsers(@Query('page') int page);
 }
@@ -87,8 +90,9 @@ class ApiClient with _$ApiClient {
   @override
   final String baseUrl;
 
+  @override
   @Get('/data')
-  Future<http.Response> getData();
+  Future<Response> getData();
 }
 ```
 
@@ -98,38 +102,44 @@ class ApiClient with _$ApiClient {
 @RestClient('https://api.example.com')  
 abstract class AdvancedClient with _$AdvancedClient {
   // Generic types
+  @override
   @Get('/generic-data')
-  Future<Response<List<User>>> getGenericData();
+  Future<Gen<List<User>>> getGenericData();
 
   // Records (Dart 3)
+  @override
   @Get('/record-data')
   Future<({int id, String name, bool active})> getRecordData();
 
   // Multiple parameters
+  @override
   @Post('/complex/{id}')
-  Future<List<Map<String, Response<User>>>> complexRequest(
+  Future<List<Map<String, Gen<User>>>> complexRequest(
     @Path('id') String id,
     @Query('search') String search,
     @Fragment() String fragment,
-    @Body() Response<Map<String, User>> body,
+    @Body() Gen<Map<String, User>> body,
     @Cancel() Future<void> cancelToken,
   );
 
   // Form fields
+  @override
   @Post('/form-data')
   Future<void> submitForm(
     @Field('name') String name,
     @Field('age') int age,
-    @Fields() Map<String, String> additionalFields,
+    @fields Map<String, String> additionalFields,
   );
 
   // Raw body
+  @override
   @Post('/raw')
   Future<void> sendRaw(@Body(raw: true) String jsonString);
 
   // Stream upload
+  @override
   @Put('/upload')
-  Future<http.StreamedResponse> uploadStream(@Body() Stream<List<int>> data);
+  Future<StreamedResponse> uploadStream(@Body() Stream<List<int>> data);
 }
 ```
 
