@@ -1,8 +1,14 @@
 name: http_annotation
-description: A starting point for Dart libraries or applications.
+description: Dart annotations for generating type-safe HTTP REST clients with automatic JSON serialization and parameter handling.
 version: 0.0.1
 repository: https://github.com/TekExplorer/http_generator
 license: BSD-3-Clause
+topics:
+  - http
+  - client
+  - annotation
+  - rest
+  - api
 
 resolution: workspace
 

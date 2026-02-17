@@ -1,8 +1,14 @@
 name: http_generator
-description: A starting point for Dart libraries or applications.
+description: Code generator for creating type-safe HTTP REST clients from annotated abstract classes. Works with http_annotation package.
 version: 0.0.1
 repository: https://github.com/TekExplorer/http_generator
 license: BSD-3-Clause
+topics:
+  - http
+  - client
+  - rest
+  - api
+  - build
 
 resolution: workspace
 
