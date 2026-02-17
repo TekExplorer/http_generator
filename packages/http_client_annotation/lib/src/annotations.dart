@@ -27,17 +27,8 @@ final class Body {
   final bool raw;
 }
 
-/// Marks a method as a multipart request.
-const multipart = Multipart();
-
-/// Marks a method as a multipart request.
-@Target({TargetKind.method})
-final class Multipart {
-  const Multipart();
-}
-
 // figure out dart docs templates
-const formFields = Fields();
+const fields = Fields();
 
 /// Multiple form fields, e.g. `name=John&age=30`
 ///
@@ -46,7 +37,7 @@ const formFields = Fields();
 /// Any other type will be converted to a string using [toString], unless a custom converter is provided.
 ///
 /// Files are only supported for multipart requests, and will be ignored otherwise.
-/// Multipart requests must be indicated with the [multipart] annotation.
+/// Multipart requests must be indicated with multipart: true
 @Target({TargetKind.parameter})
 final class Fields {
   const Fields();
@@ -89,13 +80,6 @@ const fragment = Fragment();
 @Target({TargetKind.parameter})
 final class Fragment {
   const Fragment();
-}
-
-/// Static headers to be added to the request.
-@Target({TargetKind.method})
-final class Headers {
-  const Headers(this.headers);
-  final Map<String, String> headers;
 }
 
 /// Used to cancel an ongoing request.

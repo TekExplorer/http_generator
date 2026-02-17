@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert' show Encoding;
 
 import 'package:http/http.dart' as http;
@@ -10,7 +11,7 @@ Future<http.Abortable> createRequest(
   // Streamed request
   Stream<List<int>>? bodyStream,
   int? contentLength,
-  Stream<int>? updateContentLength,
+  Stream<int>? contentLengthUpdates,
   // text request
   http.MediaType? contentType,
   Encoding? encoding, // for [body]
@@ -42,12 +43,12 @@ Future<http.Abortable> createRequest(
       abortTrigger: abortTrigger,
       bodyStream: bodyStream,
       contentLength: contentLength,
-      updateContentLength: updateContentLength,
+      contentLengthUpdates: contentLengthUpdates,
     );
   }
   assert(
-    contentLength == null && updateContentLength == null,
-    'contentLength and updateContentLength can only be used with bodyStream requests.',
+    contentLength == null && contentLengthUpdates == null,
+    'contentLength and contentLengthUpdates can only be used with bodyStream requests.',
   );
   return await _createNonStreamRequest(
     method,
@@ -74,23 +75,46 @@ http.AbortableStreamedRequest _createStreamedRequest(
   // content length can be set initially
   int? contentLength,
   // or updated over time
-  Stream<int>? updateContentLength,
+  Stream<int>? contentLengthUpdates,
+  //
+  void Function(int bytesSent, int? totalBytes)? onSendProgress,
 }) {
   final request = http.AbortableStreamedRequest(
     method,
     url,
     abortTrigger: abortTrigger,
   );
+
   request.contentLength = contentLength;
 
-  final sub = updateContentLength?.listen((length) {
+  final sub = contentLengthUpdates?.listen((length) {
     request.contentLength = length;
   });
 
-  request.sink.addStream(bodyStream).then((_) {
-    sub?.cancel();
-    request.sink.close();
-  });
+  // request.sink.addStream(bodyStream).then((_) {
+  //   sub?.cancel();
+  //   request.sink.close();
+  // });
+  var bytesSent = 0;
+  request.sink.addStream(
+    bodyStream.transform(
+      StreamTransformer.fromHandlers(
+        handleData: (data, sink) {
+          bytesSent += data.length;
+          onSendProgress?.call(bytesSent, request.contentLength);
+          sink.add(data);
+        },
+        handleError: (error, stackTrace, sink) {
+          sub?.cancel();
+          sink.addError(error, stackTrace);
+        },
+        handleDone: (sink) {
+          sub?.cancel();
+          sink.close();
+        },
+      ),
+    ),
+  );
 
   return request;
 }

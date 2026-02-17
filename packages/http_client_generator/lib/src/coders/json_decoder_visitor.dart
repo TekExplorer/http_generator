@@ -35,7 +35,7 @@ class JsonDecoderVisitor
       if (!keyType.isDartCoreString) {
         throw InvalidGenerationSourceError('Only Map<String, V> is supported.');
       }
-      return '($varName as #{{dart:core|Map}}).map((k, v) => MapEntry(k, ${nest(valueType, 'v', argument)}))';
+      return '($varName as #{{dart:core|Map}}).map((k, v) => MapEntry(k as #{{dart:core|String}}, ${nest(valueType, 'v', argument)}))';
     } else {
       final fromJsonConstructor = type.element.constructors.firstWhereOrNull(
         (c) => c.name == 'fromJson' || c.name == 'fromMap',

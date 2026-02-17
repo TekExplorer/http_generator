@@ -1,6 +1,7 @@
 // ignore: unused_import
 import 'dart:convert';
 import 'dart:core';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http_client_annotation/http_client_annotation.dart';
@@ -123,15 +124,15 @@ abstract class A with _$A {
 
   @override
   @Post('/fields')
-  Future<void> withFields(@formFields Map<String, String> fields);
+  Future<void> withFields(@fields Map<String, String> fields);
 
   @override
   @Post('/fields/object')
-  Future<void> withFields2(@formFields Fields fields);
+  Future<void> withFields2(@fields Fields fields);
 
   @override
   @Post('/fields/generic')
-  Future<void> withFields3(@formFields GenFields<Stringy> fields);
+  Future<void> withFields3(@fields GenFields<Stringy> fields);
 
   @override
   @Post('/fields')
@@ -141,9 +142,21 @@ abstract class A with _$A {
     @Field('f3') int field3,
     @Field('f4') String? field4,
     @Field('f5') Data? field5,
-    @formFields Fields grouped,
-    @formFields Map<String, String> rest,
+    @fields Fields grouped,
+    @fields Map<String, String> rest,
   );
+
+  @override
+  @Put('/stream')
+  Future<http.StreamedResponse> streamed(@Body() Stream<List<int>> body);
+
+  @override
+  @Put('/stream')
+  Future<http.StreamedResponse> streamed2(@Body() Stream<Uint8List> body);
+
+  @override
+  @Put('/stream')
+  Future<http.StreamedResponse> streamed3(@Body() http.ByteStream body);
 }
 
 void x() {

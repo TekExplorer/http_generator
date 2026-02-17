@@ -28,7 +28,7 @@ class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
       );
     }
 
-    final buffer = AnalyzerBuffer.part2(
+    final buffer = AnalyzerBuffer.part(
       element.library,
       header: '// ignore_for_file: type=lint, type=warning\n',
     );
@@ -62,23 +62,21 @@ ${element.methods.map(methodImpl).join('\n')}
       );
     }
 
-    final methodReader = ConstantReader(methodAnnotation);
-    final httpMethod = methodReader.peek('method')?.stringValue;
-    final path = methodReader.peek('path')?.stringValue;
-    if (httpMethod == null || path == null) {
+    final methodReader = MethodAnnotation(ConstantReader(methodAnnotation));
+    final httpMethod = methodReader.method;
+    final path = methodReader.path;
+
+    final futureType = (returnType as InterfaceType).typeArguments.first;
+
+    if (futureType is! InterfaceType &&
+        futureType is! RecordType &&
+        futureType is! DynamicType &&
+        futureType is! VoidType) {
       throw InvalidGenerationSourceError(
-        'Method `${method.name}` has invalid `@Method` annotation.',
+        'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>',
         element: method,
       );
     }
-
-    final futureType = (returnType as InterfaceType).typeArguments.first;
-    assert(
-      futureType is InterfaceType ||
-          futureType is RecordType ||
-          futureType is DynamicType ||
-          futureType is VoidType,
-    );
     final hasQuery = hasQueryParameters(method.formalParameters);
 
     final fragments = Checker.fragment.annotatedOf(method.formalParameters);
@@ -91,8 +89,18 @@ ${element.methods.map(methodImpl).join('\n')}
     }
     final fragment = fragments.firstOrNull;
 
+    final fields = defineFieldsMap(method);
+
+    final isMultipart =
+        methodReader.multipart == true ||
+        Checker.field.annotatedOf(method.formalParameters).any((param) {
+          final type = param.element.type;
+          if (Checker.validFile.isAssignableFromType(type)) return true;
+          return false;
+        });
+
     return '''
-  ${methodSignature(method)} {
+  ${methodSignature(method)} async {
     ${[
       'Uri \$uri = baseUri.resolve(${modifyPath(path, method.formalParameters)});',
       if (hasQuery || fragment != null) [
@@ -102,19 +110,36 @@ ${element.methods.map(methodImpl).join('\n')}
           ');',
         ].join('\n'),
     ].join('\n')}
-    // final \$request = #{{http_client_annotation|createRequest}}('$httpMethod', \$uri,${abortTrigger(method)});
-    final \$request = #{{http|AbortableRequest}}('$httpMethod', \$uri,${abortTrigger(method)});
-    ${ModifyRequest.apply(r'$request', method)}
-    return \$send(\$request).then(#{{http|Response}}.fromStream).then((response) {
-      return ${Coding.decodeResponse('response', futureType, decodingFactories(method))};
-    });
+    final \$request = await #{{http_client_annotation|createRequest}}(${[
+      (escapeDartString(httpMethod)),
+      r'$uri',
+      if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger',
+      if (isMultipart) 'multipart: true',
+      if (fields != null) 'fields: $fields',
+      if (requestBody(method) case (final body, final kind)) switch (kind) {
+          BodyKind.body => 'body: $body',
+          BodyKind.bodyBytes => 'bodyBytes: $body',
+          BodyKind.stream => 'bodyStream: $body',
+        },
+      // consider additional headers
+      if (methodReader.headersCode case final headers?) 'headers: $headers',
+      //
+    ].join(',\n')});
+
+    return ${() sync* {
+      yield r'$send($request)';
+      if (Checker.streamedResponse.isExactlyType(futureType)) return;
+      yield '.then(#{{http|Response}}.fromStream)';
+      if (Checker.response.isAssignableFromType(futureType) || futureType is VoidType) return;
+      yield '.then((response) => ${Coding.decodeResponse('response', futureType, decodingFactories(method))})';
+    }().join('\n')};
   }
 ''';
   }
 
-  String abortTrigger(MethodElement method) {
+  String? abortTrigger(MethodElement method) {
     final cancels = Checker.cancel.annotatedOf(method.formalParameters);
-    if (cancels.isEmpty) return '';
+    if (cancels.isEmpty) return null;
 
     final futures = <String>[];
     for (final cancel in cancels) {
@@ -132,8 +157,8 @@ ${element.methods.map(methodImpl).join('\n')}
       }
     }
 
-    if (futures.length == 1) return 'abortTrigger: ${futures.single}';
-    return 'abortTrigger: #{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
+    if (futures.length == 1) return futures.single;
+    return '#{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
   }
 
   String modifyPath(
@@ -207,97 +232,65 @@ String typeParametersToCode(List<TypeParameterElement> typeParameters) {
   }).join(', ')}>';
 }
 
-class ModifyRequest {
-  static String apply(String request, MethodElement method) {
-    return ModifyRequest(request, method).modifyRequest();
-  }
+enum BodyKind { body, bodyBytes, stream }
 
-  ModifyRequest(this.request, this.method);
-  final String request;
-  final MethodElement method;
+(String, BodyKind)? requestBody(MethodElement method) {
+  final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
+  if (bodyParameters.isEmpty) return null;
 
-  // bool validate() {
-  //   final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
-
-  //   final formFieldParameters = Checker.field.annotatedOf(
-  //     method.formalParameters,
-  //   );
-  //   final formFieldsParameters = Checker.fields.annotatedOf(
-  //     method.formalParameters,
-  //   );
-
-  //   if (bodyParameters.isNotEmpty &&
-  //       (formFieldParameters.isNotEmpty || formFieldsParameters.isNotEmpty)) {
-  //     throw InvalidGenerationSourceError(
-  //       'Method `${method.name}` cannot have parameters annotated with both `@Body` and `@FormField`/`@FormFields`.',
-  //       element: method,
-  //     );
-  //   }
-
-  //   return true;
-  // }
-
-  String modifyRequest() =>
-      multipartRequestFields() ?? formFieldsBody() ?? requestBody();
-
-  String requestBody() {
-    final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
-    if (bodyParameters.isEmpty) return '';
-
-    if (bodyParameters.length > 1) {
-      throw InvalidGenerationSourceError(
-        'Method `${method.name}` has multiple parameters annotated with `@Body`. '
-        'Only one `@Body` parameter is allowed per method.',
-        element: method,
-      );
-    }
-
-    final param = bodyParameters.single;
-
-    final bool raw = param.annotation.read('raw').boolValue;
-    if (raw) return '$request.body = ${param.element.name}.toString();';
-
-    final bodyEncodable = Coding.bodyEncodable(
-      param.element.type,
-      ConverterContext(param.element.name!, {
-        for (final tp in method.typeParameters)
-          tp: (context) {
-            // myFunc<@TConverter() T>()
-            final converterAnnotation = Checker.jsonConverter
-                .firstAnnotationOfExact(tp);
-            if (converterAnnotation != null) {
-              return '$request.body = #{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}));';
-            }
-            throw InvalidGenerationSourceError(
-              'Generic type parameter `${tp.name}` must have a factory for serialization. '
-              'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-              element: tp,
-            );
-          },
-      }),
-      Checker.jsonConverter.firstAnnotationOf(param.element),
+  if (bodyParameters.length > 1) {
+    throw InvalidGenerationSourceError(
+      'Method `${method.name}` has multiple parameters annotated with `@Body`. '
+      'Only one `@Body` parameter is allowed per method.',
+      element: method,
     );
-    return '$request.body = #{{dart:convert|jsonEncode}}($bodyEncodable);';
   }
 
-  String? formFieldsBody() {
-    return '$request.bodyFields = ${defineFields(method)};';
+  final param = bodyParameters.single;
+
+  final type = param.element.type;
+  final name = param.element.name!;
+
+  if (Checker.implementsStreamListInt(type)) return (name, BodyKind.stream);
+  if (Checker.stream.isAssignableFromType(type)) {
+    // works with ByteStream and other such subtypes
+    throw InvalidGenerationSourceError(
+      'Parameter `$name` annotated with `@Body` is a Stream, but is not a Stream<List<int>>.'
+      ' Found type: `${type.getDisplayString()}`.',
+      element: param.element,
+    );
   }
 
-  /// Only for multipart requests, adds fields and files to the request body.
-  String? multipartRequestFields() {
-    var fields = defineFields(method);
-    if (fields == null) return null;
-    return '''
-  final \$fields = $fields;
-  $request.fields.addAll(\$fields.fields);
-  $request.files.addAll(\$fields.files.entries.map((e) => e.value.toMultipartFile(e.key)));
-''';
-  }
+  if (Checker.implementsListInt(type)) return (name, BodyKind.bodyBytes);
+
+  final bool raw = param.annotation.read('raw').boolValue;
+  if (raw) return ('$name.toString()', BodyKind.body);
+
+  final bodyEncodable = Coding.bodyEncodable(
+    type,
+    ConverterContext(name, {
+      for (final tp in method.typeParameters)
+        tp: (context) {
+          // myFunc<@TConverter() T>()
+          final converterAnnotation = Checker.jsonConverter
+              .firstAnnotationOfExact(tp);
+          if (converterAnnotation != null) {
+            return '#{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}))';
+          }
+          throw InvalidGenerationSourceError(
+            'Generic type parameter `${tp.name}` must have a factory for serialization. '
+            'Either provide a `@JsonConverter` annotation or avoid using generic types.',
+            element: tp,
+          );
+        },
+    }),
+    Checker.jsonConverter.firstAnnotationOf(param.element),
+  );
+  return ('#{{dart:convert|jsonEncode}}($bodyEncodable)', BodyKind.body);
 }
 
-/// returns a `({Map<String, String> fields, Map<String, FilePart> files})`
-String? defineFields(MethodElement method) {
+/// returns a `Map<String, Object?>`
+String? defineFieldsMap(MethodElement method) {
   final formFieldParameters = Checker.field.annotatedOf(
     method.formalParameters,
   );
@@ -317,7 +310,7 @@ String? defineFields(MethodElement method) {
       Checker.jsonConverter.firstAnnotationOf(param.element),
     );
     final fieldName = param.annotation.read('name').stringValue;
-    lines.add('${escapeDartString(fieldName)}: $encoded,');
+    lines.add('${escapeDartString(fieldName)}: $encoded');
   }
   for (final param in formFieldsParameters) {
     final type = param.element.type;
@@ -330,14 +323,14 @@ String? defineFields(MethodElement method) {
     final paramName = param.element.name!;
 
     if (Checker.map.isAssignableFromType(type)) {
-      lines.add(paramName);
+      lines.add('...$paramName');
     } else if (param.element.type case InterfaceType type) {
       final encoding = Coding.bodyEncodable(
         type,
         ConverterContext(paramName, decodingFactories(method)),
         Checker.jsonConverter.firstAnnotationOf(param.element),
       );
-      lines.add(encoding);
+      lines.add('...$encoding');
     } else {
       throw InvalidGenerationSourceError(
         'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
@@ -345,7 +338,7 @@ String? defineFields(MethodElement method) {
       );
     }
   }
-  return '#{{http_client_annotation|mapToFields}}({${lines.map((line) => '...$line,').join('\n')}})';
+  return '{${lines.join(',\n')}}';
 }
 
 Map<TypeParameterElement, String Function(ConverterContext)> decodingFactories(
@@ -375,8 +368,6 @@ class Coding {
     GenericFactories factories, [
     DartObject? jsonConverter,
   ]) {
-    if (type is VoidType) return '';
-    if (Checker.responseType.isExactlyType(type)) return response;
     if (Checker.uint8List.isExactlyType(type)) return '$response.bodyBytes';
     if (type.isDartCoreString) return '$response.body';
 
@@ -469,4 +460,31 @@ extension on FormalParameterElement {
     }
     return buffer.toString();
   }
+}
+
+extension type MethodAnnotation(ConstantReader reader)
+    implements ConstantReader {
+  String get method => read('method').stringValue;
+  String get path => read('path').stringValue;
+
+  bool? get multipart => read('multipart').nullOr?.boolValue;
+
+  // Map<String, String>? get headers {
+  //   final headersReader = read('headers');
+  //   if (headersReader.isNull) return null;
+  //   return headersReader.mapValue.map(
+  //     (key, value) => MapEntry(
+  //       ConstantReader(key).stringValue,
+  //       ConstantReader(value).stringValue,
+  //     ),
+  //   );
+  // }
+
+  /// returns like `const {'content': 'value'}`
+  String? get headersCode =>
+      read('headers').nullOr?.objectValue.toCode(addLeadingConst: false);
+}
+
+extension on ConstantReader {
+  ConstantReader? get nullOr => isNull ? null : this;
 }
