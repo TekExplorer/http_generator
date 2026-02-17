@@ -4,7 +4,7 @@ import 'dart:core';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:http_client_annotation/http_client_annotation.dart';
+import 'package:http_annotation/http_annotation.dart';
 
 part 'client.g.dart';
 

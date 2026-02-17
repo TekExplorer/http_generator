@@ -3,7 +3,7 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer_buffer/analyzer_buffer.dart';
 import 'package:build/build.dart';
-import 'package:http_client_annotation/http_client_annotation.dart';
+import 'package:http_annotation/http_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
@@ -13,7 +13,7 @@ import 'coders/json_encoder_visitor.dart';
 import 'type_checker/checkers.dart';
 
 class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
-  HttpClientGenerator() : super(inPackage: 'http_client_annotation');
+  HttpClientGenerator() : super(inPackage: 'http_annotation');
   @override
   generateForAnnotatedElement(
     Element element,
@@ -110,7 +110,7 @@ ${element.methods.map(methodImpl).join('\n')}
           ');',
         ].join('\n'),
     ].join('\n')}
-    final \$request = await #{{http_client_annotation|createRequest}}(${[
+    final \$request = await #{{http_annotation|createRequest}}(${[
       (escapeDartString(httpMethod)),
       r'$uri',
       if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger',

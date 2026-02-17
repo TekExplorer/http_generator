@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:convert' show Encoding;
 
 import 'package:http/http.dart' as http;
-import 'package:http_client_annotation/src/file_part.dart';
+
+import 'file_part.dart';
 
 Future<http.Abortable> createRequest(
   String method,

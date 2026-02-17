@@ -1,7 +1,7 @@
-name: http_client_generator
+name: http_generator
 description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+version: 0.0.1
+repository: https://github.com/TekExplorer/http_generator
 
 resolution: workspace
 
@@ -10,7 +10,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  http_client_annotation:
+  http_annotation: ^0.0.1
   analyzer_buffer: ^0.3.0
   analyzer: '>=9.0.0 <11.0.0'
   source_gen: ^4.0.1

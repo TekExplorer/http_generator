@@ -2,7 +2,7 @@
 targets:
   $default:
     builders:
-      http_client_generator|http_client_generator:
+      http_generator|http_generator:
         enabled: true
         generate_for:
           exclude:
@@ -14,8 +14,8 @@ targets:
             - test/integration/**/*
             
 builders:
-  http_client_generator:
-    import: "package:http_client_generator/http_client_generator.dart"
+  http_generator:
+    import: "package:http_generator/http_generator.dart"
     builder_factories: ["httpClientBuilder"]
     build_extensions: {".dart": [".http_client.g.part"]}
     auto_apply: dependents

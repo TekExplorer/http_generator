@@ -1,5 +1,5 @@
 import 'package:build_test/build_test.dart';
-import 'package:http_client_generator/http_client_generator.dart';
+import 'package:http_generator/http_generator.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
       readerWriter: readerWriter,
       {
         'test_package|lib/a.dart': r'''
-import 'package:http_client_annotation/http_client_annotation.dart';
+import 'package:http_annotation/http_annotation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 part 'a.g.dart';

@@ -4,5 +4,5 @@ publish_to: none
 environment:
   sdk: ^3.9.0
 workspace:
-  - ./packages/http_client_annotation
-  - ./packages/http_client_generator
+  - ./packages/http_annotation
+  - ./packages/http_generator

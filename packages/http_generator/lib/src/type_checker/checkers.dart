@@ -5,7 +5,7 @@ import 'package:source_helper/source_helper.dart';
 
 final class Checker {
   static TypeChecker annotation(String type) =>
-      TypeChecker.typeNamedLiterally(type, inPackage: 'http_client_annotation');
+      TypeChecker.typeNamedLiterally(type, inPackage: 'http_annotation');
 
   static TypeChecker fromUrl(String url) {
     final uri = Uri.parse(url);
