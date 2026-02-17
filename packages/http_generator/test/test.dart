@@ -14,14 +14,13 @@ void main() {
       {
         'test_package|lib/a.dart': r'''
 import 'package:http_annotation/http_annotation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 part 'a.g.dart';
 
 @RestClient('http://example.com')
 abstract class A with _$A {
   @Method('GET', '/response')
-  Future<http.Response> getResponse();
+  Future<Response> getResponse();
 
   @Method('GET', '/thing')
   Future<Data> getThing();

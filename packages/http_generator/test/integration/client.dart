@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:core';
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http show Client, ByteStream;
 import 'package:http_annotation/http_annotation.dart';
 
 part 'client.g.dart';
@@ -17,7 +17,7 @@ class NoBaseUrl with _$NoBaseUrl {
 
   @override
   @Method('GET', '/response')
-  Future<http.Response> getResponse();
+  Future<Response> getResponse();
 }
 
 @RestClient('http://example.com')
@@ -27,13 +27,13 @@ abstract class A with _$A {
   final http.Client client;
 
   @override
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
+  Future<StreamedResponse> $send(BaseRequest request) {
     return client.send(request);
   }
 
   @override
   @Method('GET', '/response')
-  Future<http.Response> getResponse();
+  Future<Response> getResponse();
 
   @override
   @Method('GET', '/thing')
@@ -96,14 +96,14 @@ abstract class A with _$A {
 
   @override
   @Get('/query')
-  Future<http.Response> getWithQuery(
+  Future<Response> getWithQuery(
     @Query('search') String search,
     @QueryAll() Map<String, dynamic> filters,
   );
 
   @override
   @Get('/path/{id}/detail/{detailId}')
-  Future<http.Response> getWithPath(
+  Future<Response> getWithPath(
     @Path('id') String id,
     @Path('detailId') String detailId,
   );
@@ -148,21 +148,15 @@ abstract class A with _$A {
 
   @override
   @Put('/stream')
-  Future<http.StreamedResponse> streamed(@Body() Stream<List<int>> body);
+  Future<StreamedResponse> streamed(@Body() Stream<List<int>> body);
 
   @override
   @Put('/stream')
-  Future<http.StreamedResponse> streamed2(@Body() Stream<Uint8List> body);
+  Future<StreamedResponse> streamed2(@Body() Stream<Uint8List> body);
 
   @override
   @Put('/stream')
-  Future<http.StreamedResponse> streamed3(@Body() http.ByteStream body);
-}
-
-void x() {
-  http.AbortableRequest('method', Uri());
-  http.AbortableMultipartRequest('method', Uri());
-  http.AbortableStreamedRequest('method', Uri());
+  Future<StreamedResponse> streamed3(@Body() http.ByteStream body);
 }
 
 class Data {

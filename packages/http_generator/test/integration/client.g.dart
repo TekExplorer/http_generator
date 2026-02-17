@@ -11,18 +11,18 @@ part of 'client.dart';
 
 mixin _$NoBaseUrl {
   @protected
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
+  Future<StreamedResponse> $send(BaseRequest request) {
     return request.send();
   }
 
   String get baseUrl;
   Uri get baseUri => Uri.parse(baseUrl);
 
-  Future<http.Response> getResponse() async {
+  Future<Response> getResponse() async {
     Uri $uri = baseUri.resolve('/response');
     final $request = await createRequest('GET', $uri);
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 }
 
@@ -31,18 +31,18 @@ mixin _$NoBaseUrl {
 
 mixin _$A {
   @protected
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
+  Future<StreamedResponse> $send(BaseRequest request) {
     return request.send();
   }
 
   String get baseUrl => 'http://example.com';
   Uri get baseUri => Uri.parse(baseUrl);
 
-  Future<http.Response> getResponse() async {
+  Future<Response> getResponse() async {
     Uri $uri = baseUri.resolve('/response');
     final $request = await createRequest('GET', $uri);
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<Data> getThing() async {
@@ -50,7 +50,7 @@ mixin _$A {
     final $request = await createRequest('GET', $uri);
 
     return $send($request)
-        .then(http.Response.fromStream)
+        .then(Response.fromStream)
         .then(
           (response) =>
               Data.fromJson(jsonDecode(response.body) as Map<String, dynamic>),
@@ -63,7 +63,7 @@ mixin _$A {
 
     return $send(
       $request,
-    ).then(http.Response.fromStream).then((response) => response.body);
+    ).then(Response.fromStream).then((response) => response.body);
   }
 
   Future<Gen<Data>> getGenericThing() async {
@@ -71,7 +71,7 @@ mixin _$A {
     final $request = await createRequest('GET', $uri);
 
     return $send($request)
-        .then(http.Response.fromStream)
+        .then(Response.fromStream)
         .then(
           (response) => Gen<Data>.fromJson(
             jsonDecode(response.body) as Map<String, dynamic>,
@@ -84,14 +84,14 @@ mixin _$A {
     Uri $uri = baseUri.resolve('/body');
     final $request = await createRequest('POST', $uri, body: jsonEncode(body));
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody2(Map<String, dynamic> body) async {
     Uri $uri = baseUri.resolve('/body2');
     final $request = await createRequest('POST', $uri, body: jsonEncode(body));
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody3(Data body) async {
@@ -102,7 +102,7 @@ mixin _$A {
       body: jsonEncode(body.toJson()),
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody4(Gen<Data> body) async {
@@ -113,7 +113,7 @@ mixin _$A {
       body: jsonEncode(body.toJson((object) => object.toJson())),
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody5(List<Data> body) async {
@@ -124,23 +124,21 @@ mixin _$A {
       body: jsonEncode(body.map((e) => e.toJson()).toList()),
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody6(String body) async {
     Uri $uri = baseUri.resolve('/body6');
     final $request = await createRequest('POST', $uri, body: body.toString());
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<()> getRecord0() async {
     Uri $uri = baseUri.resolve('/record0');
     final $request = await createRequest('GET', $uri);
 
-    return $send(
-      $request,
-    ).then(http.Response.fromStream).then((response) => ());
+    return $send($request).then(Response.fromStream).then((response) => ());
   }
 
   Future<(int, String)> getRecord2() async {
@@ -148,7 +146,7 @@ mixin _$A {
     final $request = await createRequest('GET', $uri);
 
     return $send($request)
-        .then(http.Response.fromStream)
+        .then(Response.fromStream)
         .then(
           (response) => () {
             final $map = jsonDecode(response.body) as Map;
@@ -162,7 +160,7 @@ mixin _$A {
     final $request = await createRequest('GET', $uri);
 
     return $send($request)
-        .then(http.Response.fromStream)
+        .then(Response.fromStream)
         .then(
           (response) => () {
             final $map = jsonDecode(response.body) as Map;
@@ -179,7 +177,7 @@ mixin _$A {
       body: jsonEncode({'id': body.id, 'name': body.name}),
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withRecord2Body((int, String) body) async {
@@ -190,10 +188,10 @@ mixin _$A {
       body: jsonEncode([body.$1, body.$2]),
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
-  Future<http.Response> getWithQuery(
+  Future<Response> getWithQuery(
     String search,
     Map<String, dynamic> filters,
   ) async {
@@ -207,14 +205,14 @@ mixin _$A {
     );
     final $request = await createRequest('GET', $uri);
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
-  Future<http.Response> getWithPath(String id, String detailId) async {
+  Future<Response> getWithPath(String id, String detailId) async {
     Uri $uri = baseUri.resolve('/path/${id}/detail/${detailId}');
     final $request = await createRequest('GET', $uri);
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> cancelable(Future<void> abortTrigger) async {
@@ -225,7 +223,7 @@ mixin _$A {
       abortTrigger: abortTrigger,
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<List<Map<String, Gen<Data>>>> everything(
@@ -250,7 +248,7 @@ mixin _$A {
     );
 
     return $send($request)
-        .then(http.Response.fromStream)
+        .then(Response.fromStream)
         .then(
           (response) => (jsonDecode(response.body) as List)
               .map(
@@ -272,7 +270,7 @@ mixin _$A {
     Uri $uri = baseUri.resolve('/fields');
     final $request = await createRequest('POST', $uri, fields: {...fields});
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields2(Fields fields) async {
@@ -283,7 +281,7 @@ mixin _$A {
       fields: {...fields.toJson()},
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields3(GenFields<Stringy> fields) async {
@@ -294,7 +292,7 @@ mixin _$A {
       fields: {...fields.toJson((object) => object.toJson())},
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields4(
@@ -321,24 +319,24 @@ mixin _$A {
       },
     );
 
-    return $send($request).then(http.Response.fromStream);
+    return $send($request).then(Response.fromStream);
   }
 
-  Future<http.StreamedResponse> streamed(Stream<List<int>> body) async {
+  Future<StreamedResponse> streamed(Stream<List<int>> body) async {
     Uri $uri = baseUri.resolve('/stream');
     final $request = await createRequest('PUT', $uri, bodyStream: body);
 
     return $send($request);
   }
 
-  Future<http.StreamedResponse> streamed2(Stream<Uint8List> body) async {
+  Future<StreamedResponse> streamed2(Stream<Uint8List> body) async {
     Uri $uri = baseUri.resolve('/stream');
     final $request = await createRequest('PUT', $uri, bodyStream: body);
 
     return $send($request);
   }
 
-  Future<http.StreamedResponse> streamed3(http.ByteStream body) async {
+  Future<StreamedResponse> streamed3(http.ByteStream body) async {
     Uri $uri = baseUri.resolve('/stream');
     final $request = await createRequest('PUT', $uri, bodyStream: body);
 

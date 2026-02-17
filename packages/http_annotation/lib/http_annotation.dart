@@ -3,6 +3,7 @@
 /// More dartdocs go here.
 library;
 
+export 'package:http/http.dart' show StreamedResponse, Response, BaseRequest;
 export 'package:meta/meta.dart' show protected;
 
 // ignore: invalid_export_of_internal_element
