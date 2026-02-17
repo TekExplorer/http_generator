@@ -29,28 +29,39 @@ dev_dependencies:
 Define your REST API client using annotations:
 
 ```dart
+import 'package:http/http.dart' as http;
 import 'package:http_annotation/http_annotation.dart';
 
 part 'api_client.g.dart';
 
 @RestClient("https://api.example.com")
-abstract class ApiClient {
-  factory ApiClient() = _ApiClient;
+abstract class ApiClient with _$ApiClient {
+  ApiClient(this.client);
 
+  final http.Client client;
+
+  @override
+  Future<StreamedResponse> $send(BaseRequest request) {
+    return client.send(request);
+  }
+
+  @override
   @Get("/users/{id}")
   Future<User> getUser(@Path("id") String userId);
 
+  @override
   @Post("/users")
-  Future<User> createUser(@Body() CreateUserRequest request);
+  Future<User> createUser(@Body() User request);
 
+  @override
   @Get("/users")
-  Future<List<User>> getUsers({
-    @Query("page") int? page,
-    @Query("limit") int? limit,
-  });
+  Future<List<User>> getUsers(
+    @Query("page") int page,
+    @QueryAll() Map<String, dynamic> filters,
+  );
 
-  @Post("/upload")
-  @multipart
+  @override
+  @Post("/upload", multipart: true)
   Future<UploadResponse> uploadFile(
     @Field("description") String description,
     @Field("file") FilePart file,
@@ -73,18 +84,21 @@ abstract class ApiClient {
 - `@Patch(path)` - HTTP PATCH request
 
 Each method annotation supports optional parameters:
+
 - `headers` - Additional headers for the request
-- `multipart` - Whether the request should be multipart (for file uploads)
+- `multipart` - Boolean flag for multipart requests (for file uploads)
+
+Example: `@Post("/upload", multipart: true)`
 
 #### Parameter Annotations
 
 - `@Path("name")` - URL path parameter replacement
 - `@Query("name")` - Single query parameter
-- `@queryAll` - Multiple query parameters from an object
-- `@Body()` - Request body (JSON serialized by default)
+- `@QueryAll()` - Multiple query parameters from a `Map<String, dynamic>`
+- `@Body()` - Request body (JSON serialized by default, use `raw: true` for plain text)
 - `@Field("name")` - Single form field
-- `@fields` - Multiple form fields from an object
-- `@fragment` - URL fragment
+- `@fields` - Multiple form fields from an object or map
+- `@Fragment()` - URL fragment
 - `@Cancel()` - Request cancellation token
 
 #### File Handling
@@ -118,6 +132,7 @@ final imagePart = FilePart.fromPath(
 Use the `@Cancel()` annotation with a `Future<void>` parameter:
 
 ```dart
+@override
 @Get("/long-running-task")
 Future<Result> getLongRunningTask(@Cancel() Future<void> cancelToken);
 
@@ -137,7 +152,16 @@ This package is designed to work with a code generator. After defining your clie
 dart run build_runner build
 ```
 
-This will generate the implementation class (e.g., `_ApiClient`) that handles the actual HTTP requests.
+This will generate the mixin implementation (e.g., `_$ApiClient`) that handles the actual HTTP requests. Your abstract class uses this mixin to provide the HTTP functionality.
+
+### Class Structure
+
+The generated code follows this pattern:
+
+- Your abstract class extends with a generated mixin: `abstract class MyClient with _$MyClient`
+- All HTTP methods must be marked with `@override`
+- You need to implement a `$send` method that takes a `BaseRequest` and returns a `Future<StreamedResponse>`
+- You can inject an `http.Client` or use the default implementation
 
 ## Additional Information
 
