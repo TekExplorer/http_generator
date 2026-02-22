@@ -14,6 +14,15 @@ import 'type_checker/checkers.dart';
 
 class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
   HttpClientGenerator() : super(inPackage: 'http_annotation');
+
+  RestClient getAnnotation(ConstantReader annotation) {
+    return RestClient(
+      annotation.read('baseUrl').nullOr?.stringValue,
+      annotation.read('mixinName').nullOr?.stringValue,
+      annotation.read('mixinClass').nullOr?.boolValue,
+    );
+  }
+
   @override
   generateForAnnotatedElement(
     Element element,
@@ -32,16 +41,22 @@ class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
       element.library,
       header: '// ignore_for_file: type=lint, type=warning\n',
     );
-    final baseUrl = annotation.peek('baseUrl')?.stringValue;
+
+    final annotationValue = getAnnotation(annotation);
+    final baseUrl = annotationValue.baseUrl;
+    final mixinName = annotationValue.mixinName ?? '_\$${element.name}';
+    final mixinClass = annotationValue.mixinClass == true;
 
     buffer.write('''
-mixin _\$${element.name} {
+${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName implements #{{http_annotation|\$GeneratedClient}} {
   @#{{meta|protected}}
   Future<#{{http|StreamedResponse}}> \$send(#{{http|BaseRequest}} request) {
     return request.send();
   }
-  String get baseUrl${baseUrl != null ? " => ${escapeDartString(baseUrl)}" : ''};
-  Uri get baseUri => Uri.parse(baseUrl);
+  
+  Uri get baseUrl${baseUrl != null ? " => Uri.parse(${escapeDartString(baseUrl)})" : ''};
+
+  Uri \$buildUrl(String path) => baseUrl.resolve(path);
 
 ${element.methods.map(methodImpl).join('\n')}
 }
@@ -102,7 +117,7 @@ ${element.methods.map(methodImpl).join('\n')}
     return '''
   ${methodSignature(method)} async {
     ${[
-      'Uri \$uri = baseUri.resolve(${modifyPath(path, method.formalParameters)});',
+      'Uri \$uri = \$buildUrl(${modifyPath(path, method.formalParameters)});',
       if (hasQuery || fragment != null) [
           '\$uri = \$uri.replace(', //
           if (hasQuery) 'queryParameters: ${createQuery('\$uri', method.formalParameters)},', //
@@ -165,19 +180,27 @@ ${element.methods.map(methodImpl).join('\n')}
     String path,
     List<FormalParameterElement> formalParameters,
   ) {
-    final pathParameters = Checker.path.annotatedOf(formalParameters);
+    final pathParameters = Checker.path
+        .annotatedOf(formalParameters)
+        .map(
+          (param) => (
+            path: PathAnnotation(param.annotation).value,
+            paramName: param.element.name!,
+          ),
+        );
+
     final map = {
-      for (final param in pathParameters)
-        param.annotation.read('value').stringValue: param,
+      for (final (:path, :paramName) in pathParameters)
+        path ?? paramName: paramName,
     };
 
     return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
       match,
     ) {
       final key = match.group(1)!;
-      final param = map[key];
-      if (param == null) return match.group(0)!;
-      return '\${${param.element.name}}';
+      final name = map[key];
+      if (name == null) return match.group(0)!;
+      return '\${$name}';
     });
   }
 
@@ -201,7 +224,7 @@ ${element.methods.map(methodImpl).join('\n')}
       if (param.element.type.isDartCoreMap) return '...${param.element.name!},';
       if (param.element.type case InterfaceType type) {
         // TODO: more robust query serialization
-        final encode = type.methods.where((m) => m.name == 'toJson' || m.name == 'toMap');
+        final encode = type.allMethods.where((m) => m.name == 'toJson' || m.name == 'toMap');
         for (final m in encode) {
           if (m.returnType.isDartCoreMap && m.formalParameters.isEmpty) {
             return '...${param.element.name!}.${m.name}(),';
@@ -216,7 +239,7 @@ ${element.methods.map(methodImpl).join('\n')}
       final paramName = param.element.name!;
       return '${escapeDartString(queryKey)}: $paramName,';
     }).join('\n')}
-  }''';
+  }..removeWhere((_, value) => value == null)''';
   }
 }
 
@@ -484,7 +507,19 @@ extension type MethodAnnotation(ConstantReader reader)
   String? get headersCode =>
       read('headers').nullOr?.objectValue.toCode(addLeadingConst: false);
 }
+extension type PathAnnotation(ConstantReader reader) implements ConstantReader {
+  String? get value => read('value').nullOr?.stringValue;
+}
 
 extension on ConstantReader {
   ConstantReader? get nullOr => isNull ? null : this;
+}
+
+extension on InterfaceType {
+  Iterable<MethodElement> get allMethods sync* {
+    yield* methods;
+    for (var type in allSupertypes) {
+      yield* type.methods;
+    }
+  }
 }

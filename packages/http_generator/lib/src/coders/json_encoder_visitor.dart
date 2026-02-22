@@ -41,7 +41,9 @@ class JsonEncoderVisitor
       return '$varName.map((k, v) => MapEntry(k, ${nest(valueType, 'v', argument)}))';
     }
 
-    final toJson = type.getMethod('toJson') ?? type.getMethod('toMap');
+    final toJson =
+        type.lookUpMethod('toJson', type.element.library) ??
+        type.lookUpMethod('toMap', type.element.library);
 
     if (toJson == null || toJson.isStatic) {
       throw InvalidGenerationSourceError(

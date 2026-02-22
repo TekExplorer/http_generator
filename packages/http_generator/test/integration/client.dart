@@ -1,5 +1,3 @@
-// ignore: unused_import
-import 'dart:convert';
 import 'dart:core';
 import 'dart:typed_data';
 
@@ -13,7 +11,7 @@ class NoBaseUrl with _$NoBaseUrl {
   NoBaseUrl({required this.baseUrl});
 
   @override
-  final String baseUrl;
+  final Uri baseUrl;
 
   @override
   @Method('GET', '/response')
@@ -98,7 +96,7 @@ abstract class A with _$A {
   @Get('/query')
   Future<Response> getWithQuery(
     @Query('search') String search,
-    @QueryAll() Map<String, dynamic> filters,
+    @Queries() Map<String, dynamic> filters,
   );
 
   @override

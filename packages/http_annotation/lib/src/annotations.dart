@@ -1,17 +1,21 @@
+import 'dart:async';
+
 import 'package:meta/meta_meta.dart';
 
 // TODO: support any interface like mixins, extensions, extension types etc once augmentations are released
 @Target({TargetKind.classType})
 class RestClient {
-  const RestClient([this.baseUrl]);
+  const RestClient([this.baseUrl, this.mixinName, this.mixinClass]);
 
   final String? baseUrl;
+  final String? mixinName;
+  final bool? mixinClass;
 }
 
 @Target({TargetKind.parameter})
 class Path {
-  const Path(this.value);
-  final String value;
+  const Path([this.value]);
+  final String? value;
 }
 
 @Target({TargetKind.parameter})
@@ -66,11 +70,11 @@ final class Query {
 
 // Multiple query parameters, e.g. `?filter=name&filter=age`
 // serialized from an object
-const queryAll = QueryAll();
+const query = Queries();
 
 @Target({TargetKind.parameter})
-final class QueryAll {
-  const QueryAll();
+final class Queries {
+  const Queries();
 }
 
 /// Fragment part of the URL, e.g. `#section1`
