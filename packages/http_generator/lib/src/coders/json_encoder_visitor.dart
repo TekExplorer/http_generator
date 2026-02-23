@@ -18,13 +18,13 @@ class JsonEncoderVisitor
     final varName = argument.varName;
     // final factory = argument.factories[type]?.call(argument);
     // if (factory != null) return '$factory($varName)';
-    if (type.isSerializableToJson) return varName;
+    if (type.isSerializableToJson()) return varName;
 
     if (type.isDartCoreList) {
       final listType = type.typeArguments.first;
       // shortcut so we dont have unnecessary nesting
       if (listType is DynamicType) return varName;
-      if (listType.isSerializableToJson) return varName;
+      if (listType.isSerializableToJson()) return varName;
       return '$varName.map((e) => ${nest(listType, 'e', argument)}).toList()';
     }
     if (type.isDartCoreMap) {
@@ -36,7 +36,7 @@ class JsonEncoderVisitor
       final valueType = mapType[1];
       // shortcut so we dont have unnecessary nesting
       if (valueType is DynamicType) return varName;
-      if (valueType.isSerializableToJson) return varName;
+      if (valueType.isSerializableToJson()) return varName;
 
       return '$varName.map((k, v) => MapEntry(k, ${nest(valueType, 'v', argument)}))';
     }
@@ -168,12 +168,87 @@ class JsonEncoderVisitor
 }
 
 extension on DartType {
-  bool get isSerializableToJson => _isSerializableToJson();
+  bool isSerializableToJson() =>
+      _isJsonPrimitive() ||
+      _isJsonMap() ||
+      _isJsonIterable() ||
+      _isJsonObject();
 
-  bool _isSerializableToJson() =>
-      isDartCoreString ||
-      isDartCoreInt ||
-      isDartCoreDouble ||
-      isDartCoreBool ||
-      isDartCoreNum;
+  bool _isJsonPrimitive() => isA(.any([p.string, p.num, p.bool]));
+
+  static final p = (
+    string: TypeChecker.fromUrl('dart:core#String'),
+    num: TypeChecker.fromUrl('dart:core#num'),
+    bool: TypeChecker.fromUrl('dart:core#bool'),
+    map: TypeChecker.fromUrl('dart:core#Map'),
+    iterable: TypeChecker.fromUrl('dart:core#Iterable'),
+  );
+
+  bool _isJsonMap() {
+    if (!isA(p.map)) return false;
+    final [keyType, valueType] = typeArgumentsOf(p.map)!;
+
+    return keyType.isA(p.string) && valueType.isSerializableToJson();
+  }
+
+  bool _isJsonIterable() {
+    if (!isA(p.iterable)) return false;
+    final itemType = typeArgumentsOf(p.iterable)!.single;
+    return itemType.isSerializableToJson();
+  }
+
+  bool _isJsonObject() {
+    // what do we know? nothing. let jsonEncode figure it out.
+    if (this is DynamicType || isDartCoreObject) return true;
+
+    return on<bool>(
+      dynamic: () => true,
+      interface: (type) {
+        // if it has a toJson method, we're good.
+        final toJson = type.lookUpMethod('toJson', type.element.library);
+        if (toJson != null && !toJson.isStatic) return true;
+        // otherwise, we have no guarantees. assume the worst.
+        return false;
+      },
+      record: (_) => false,
+      typeParameter: (type) {
+        // no bound to know
+        if (type.bound is DynamicType) return false;
+        // if the bound is known to be serializable, we're good.
+        return type.bound.isSerializableToJson();
+      },
+      invalid: () => false,
+      never: () => false,
+      void_: () => false,
+      function: (_) => false,
+    );
+  }
+
+  bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
+
+  T on<T>({
+    required T Function(FunctionType type) function,
+    required T Function(InterfaceType type) interface,
+    required T Function(RecordType type) record,
+    required T Function(TypeParameterType type) typeParameter,
+    required T Function() invalid,
+    required T Function() dynamic,
+    required T Function() never,
+    required T Function() void_,
+  }) {
+    return switch (this) {
+      DynamicType() => dynamic(),
+      VoidType() => void_(),
+      NeverType() => never(),
+      InvalidType() => invalid(),
+      FunctionType type => function(type),
+      InterfaceType type => interface(type),
+      RecordType type => record(type),
+      TypeParameterType type => typeParameter(type),
+      _ => throw InvalidGenerationSourceError(
+        'Unknown type kind `$runtimeType` ($this).',
+        element: element,
+      ),
+    };
+  }
 }
