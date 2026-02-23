@@ -5,7 +5,7 @@ import 'package:meta/meta_meta.dart';
 // TODO: support any interface like mixins, extensions, extension types etc once augmentations are released
 @Target({TargetKind.classType})
 class RestClient {
-  const RestClient([this.baseUrl, this.mixinName, this.mixinClass]);
+  const RestClient({this.baseUrl, this.mixinName, this.mixinClass});
 
   final String? baseUrl;
   final String? mixinName;
@@ -18,30 +18,19 @@ class Path {
   final String? value;
 }
 
-enum BodyType {
-  stream,
-  bytes,
-  string,
-  json,
+// final class Custom {
+//   const Custom();
+// }
 
-  /// ```dart
-  /// @Get('/my-endpoint')
-  /// myMethod(@Body.custom() MyCustomType body);
-  /// FutureOr<String | List<int> | Stream<List<int>>> $myMethodEncode(MyCustomType body) {
-  ///   // custom encoding logic here
-  /// }
-  /// ```
-  custom,
-}
+enum BodyType { stream, bytes, string, json }
 
 @Target({TargetKind.parameter})
 final class Body {
-  const Body() : bodyType = null;
-  const Body.stream() : bodyType = BodyType.bytes;
-  const Body.bytes() : bodyType = BodyType.bytes;
-  const Body.string() : bodyType = BodyType.string;
-  const Body.json() : bodyType = BodyType.json;
-  const Body.custom() : bodyType = BodyType.custom;
+  const Body({this.custom = false}) : bodyType = null;
+  const Body.stream({this.custom = false}) : bodyType = BodyType.stream;
+  const Body.bytes({this.custom = false}) : bodyType = BodyType.bytes;
+  const Body.string({this.custom = false}) : bodyType = BodyType.string;
+  const Body.json({this.custom = false}) : bodyType = BodyType.json;
 
   /// [bodyType] indicates how the body should be serialized and sent.
   /// if [:null:], we try to infer the body type from the parameter type.
@@ -56,6 +45,7 @@ final class Body {
   /// which generates a custom encoder method for you to implement.
 
   final BodyType? bodyType;
+  final bool custom;
 }
 
 // figure out dart docs templates
@@ -63,7 +53,7 @@ const fields = Fields();
 
 /// Multiple form fields, e.g. `name=John&age=30`
 ///
-/// Object must be or serialize to a [Map<String, Object?>], where the value can be a [String], a [FilePart], or a [http.MultipartFile].
+/// Object must be or serialize to a [Map<String, Object?>], where the value can be a [String] or a [FilePart]
 ///
 /// Any other type will be converted to a string using [toString], unless a custom converter is provided.
 ///
@@ -71,12 +61,13 @@ const fields = Fields();
 /// Multipart requests must be indicated with multipart: true
 @Target({TargetKind.parameter})
 final class Fields {
-  const Fields();
+  const Fields({this.custom = false});
+  final bool custom;
 }
 
 /// A single form field, e.g. `name=John`
 ///
-/// The value can be a [String], a [FilePart], or a [http.MultipartFile].
+/// The value can be a [String] or a [FilePart]
 ///
 /// Any other type will be converted to a string using [toString], unless a custom converter is provided.
 ///
@@ -84,8 +75,10 @@ final class Fields {
 /// Multipart requests must be indicated with the [multipart] annotation.
 @Target({TargetKind.parameter})
 final class Field {
-  const Field(this.name);
+  const Field(this.name, {this.custom = false});
+
   final String name;
+  final bool custom;
 }
 
 // A single query parameter, e.g. `?search=foo`

@@ -68,7 +68,7 @@ Future<http.Abortable> _createRequest(
         url,
         abortTrigger: abortTrigger,
       );
-      final fields = (await body.fields).split;
+      final fields = body.fields.split;
 
       request.fields.addAll(fields.fields.map((k, v) => MapEntry(k, v.value)));
 
@@ -76,6 +76,7 @@ Future<http.Abortable> _createRequest(
         final file = entry.value;
         request.files.add(await file.toHttpMultipartFile(entry.key));
       }).wait;
+
       return request;
     case SimpleEncoded? body:
       final request = http.AbortableRequest(
@@ -88,14 +89,11 @@ Future<http.Abortable> _createRequest(
 
       switch (body) {
         case EncodedBytes():
-          request.bodyBytes = await body.bytes;
+          request.bodyBytes = body.bytes;
         case EncodedString():
-          request.body = await body.string;
+          request.body = body.string;
         case EncodedFields():
-          request.bodyFields = {
-            for (final entry in (await body.fields).entries)
-              entry.key: ?entry.value,
-          };
+          request.bodyFields = body.fields;
         case null:
       }
 

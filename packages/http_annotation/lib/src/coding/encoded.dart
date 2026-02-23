@@ -7,9 +7,6 @@ part of 'coding.dart';
 /// and allows the generator to handle different body types in a consistent way,
 /// without having to worry about the specific type of the body.
 ///
-/// The argument is a function which accepts a [FutureOr] value,
-/// which allows for both synchronous and asynchronous encoding of the body.
-///
 /// This can include processing the body in an isolate, which is useful for
 /// expensive encoding operations like JSON encoding large objects
 sealed class Encoded {
@@ -32,19 +29,35 @@ sealed class Encoded {
   static const multipart = EncodedMultipart.new;
 }
 
-sealed class SimpleEncoded extends Encoded {
+sealed class BodyEncoded implements Encoded {
+  /// This is a convenience factory for encoding stream bodies, such as streaming data
+  static const stream = EncodedStream.new;
+
+  /// This is a convenience factory for encoding byte bodies, such as files or binary data.
+  static const bytes = EncodedBytes.new;
+
+  /// This is a convenience factory for encoding string bodies,
+  /// and can be used for plain text or pre-serialized JSON strings.
+  static const string = EncodedString.new;
+
+  /// This represents query parameters or form-data fields,
+  /// where each field can have multiple values, but cannot include files.
+  static const fields = EncodedFields.new;
+}
+
+sealed class SimpleEncoded implements Encoded, BodyEncoded {
   SimpleEncoded({this.encoding});
   final Encoding? encoding;
 }
 
-final class EncodedStream extends Encoded {
+final class EncodedStream implements BodyEncoded {
   EncodedStream(this._stream, {this.contentLength, this.contentLengthUpdates});
 
   Stream<List<int>> stream() async* {
-    yield* await _stream;
+    yield* _stream;
   }
 
-  final FutureOr<Stream<List<int>>> _stream;
+  final Stream<List<int>> _stream;
   final FutureOr<int?>? contentLength;
   final Stream<int>? contentLengthUpdates;
 }
@@ -52,22 +65,27 @@ final class EncodedStream extends Encoded {
 final class EncodedBytes extends SimpleEncoded {
   EncodedBytes(this.bytes, {super.encoding});
 
-  final FutureOr<List<int>> bytes;
+  final List<int> bytes;
 }
 
 final class EncodedString extends SimpleEncoded {
   EncodedString(this.string, {super.encoding});
-  final FutureOr<String> string;
+  final String string;
 }
 
 final class EncodedFields extends SimpleEncoded {
   EncodedFields(this.fields, {super.encoding});
-  final FutureOr<Map<String, String?>> fields;
+  EncodedFields.from(Map<String, Object?> fields, {super.encoding})
+    : fields = {
+        for (final entry in fields.entries) entry.key: ?entry.value?.toString(),
+      };
+
+  final Map<String, String> fields;
 }
 
-final class EncodedMultipart extends Encoded {
+final class EncodedMultipart implements Encoded {
   EncodedMultipart(this.fields);
-  final FutureOr<Map<String, MultipartValue>> fields;
+  final Map<String, MultipartValue> fields;
 }
 
 @internal

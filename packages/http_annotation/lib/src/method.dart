@@ -21,7 +21,7 @@ final class Method {
 
 @Target({TargetKind.method})
 final class Get extends Method {
-  const Get(String path, {super.headers, super.multipart}) : super('GET', path);
+  const Get(String path, {super.headers}) : super('GET', path);
 }
 
 @Target({TargetKind.method})
@@ -49,6 +49,5 @@ final class Patch extends Method {
 
 @Target({TargetKind.method})
 final class Head extends Method {
-  const Head(String path, {super.headers, super.multipart})
-    : super('HEAD', path);
+  const Head(String path, {super.headers}) : super('HEAD', path);
 }

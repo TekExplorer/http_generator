@@ -6,6 +6,8 @@ import 'package:http_annotation/http_annotation.dart';
 
 part 'client.g.dart';
 
+class SpecialClass {}
+
 @RestClient()
 class NoBaseUrl with _$NoBaseUrl {
   NoBaseUrl({required this.baseUrl});
@@ -16,11 +18,33 @@ class NoBaseUrl with _$NoBaseUrl {
   @override
   @Method('GET', '/response')
   Future<Response> getResponse();
+
+  @override
+  FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body) {
+    return Encoded.string('custom-encoded-${body.hashCode}');
+  }
+
+  @override
+  @Post('/special')
+  Future<StreamedResponse> updateThing(@Body() SpecialClass body);
+
+  @override
+  FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body) {
+    return .fields({'custom': 'custom-encoded-${body.hashCode}'});
+  }
+
+  @override
+  @Post('/special')
+  Future<StreamedResponse> updateThing2(@Body(custom: true) SpecialClass body);
 }
 
-@RestClient('http://example.com')
-abstract class A with _$A {
-  A(this.client);
+@RestClient(
+  baseUrl: 'http://example.com',
+  mixinClass: true,
+  mixinName: 'AClientMixin',
+)
+abstract class AClient extends AClientMixin {
+  AClient(this.client);
 
   final http.Client client;
 
