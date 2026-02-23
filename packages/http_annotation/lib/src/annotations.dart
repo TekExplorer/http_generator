@@ -18,17 +18,44 @@ class Path {
   final String? value;
 }
 
+enum BodyType {
+  stream,
+  bytes,
+  string,
+  json,
+
+  /// ```dart
+  /// @Get('/my-endpoint')
+  /// myMethod(@Body.custom() MyCustomType body);
+  /// FutureOr<String | List<int> | Stream<List<int>>> $myMethodEncode(MyCustomType body) {
+  ///   // custom encoding logic here
+  /// }
+  /// ```
+  custom,
+}
+
 @Target({TargetKind.parameter})
 final class Body {
-  /// [raw] indicates that the body should be sent as is, without any serialization.
-  ///
-  /// This is useful for sending plain text or pre-serialized JSON strings.
-  ///
-  /// if [raw] = [true], will toString() the value instead of serializing.
-  const Body({this.raw = false});
+  const Body() : bodyType = null;
+  const Body.stream() : bodyType = BodyType.bytes;
+  const Body.bytes() : bodyType = BodyType.bytes;
+  const Body.string() : bodyType = BodyType.string;
+  const Body.json() : bodyType = BodyType.json;
+  const Body.custom() : bodyType = BodyType.custom;
 
-  /// if [raw] = [true], will toString() the value instead of serializing.
-  final bool raw;
+  /// [bodyType] indicates how the body should be serialized and sent.
+  /// if [:null:], we try to infer the body type from the parameter type.
+  /// if [bodyType] is provided, it will be used to serialize the body, regardless of the parameter type.
+  ///
+  /// Inference Examples:
+  /// - [String] -> BodyType.string
+  /// - [List<int>] or Uint8List -> BodyType.bytes
+  /// - [Map] or custom objects -> BodyType.json
+  /// - Protobuf messages -> BodyType.proto
+  /// - If the parameter type is not recognized, defaults to BodyType.custom,
+  /// which generates a custom encoder method for you to implement.
+
+  final BodyType? bodyType;
 }
 
 // figure out dart docs templates

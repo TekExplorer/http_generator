@@ -68,12 +68,17 @@ final class Checker {
   }
 
   static final map = fromUrl('dart:core#Map');
+
+  static final string = fromUrl('dart:core#String');
+
   static bool implementsMapStringString(DartType type) {
     final mapArgs = type.typeArgumentsOf(map);
     if (mapArgs == null) return false;
     final [key, value] = mapArgs;
     return key.isDartCoreString && value.isDartCoreString;
   }
+
+  static final protoGeneratedMessage = fromUrl('protobuf#GeneratedMessage');
 }
 
 extension AnnotatedOf on TypeChecker {

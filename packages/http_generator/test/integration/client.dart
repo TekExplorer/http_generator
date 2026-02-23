@@ -67,7 +67,7 @@ abstract class A with _$A {
 
   @override
   @Post('/body6')
-  Future<void> withBody6(@Body(raw: true) String body);
+  Future<void> withBody6(@Body.string() String body);
 
   @override
   @Get('/record0')

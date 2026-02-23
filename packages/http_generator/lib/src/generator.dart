@@ -64,183 +64,159 @@ ${element.methods.map(methodImpl).join('\n')}
 
     return buffer.toString();
   }
+}
 
-  String methodImpl(MethodElement method) {
-    final methodAnnotation = Checker.method.firstAnnotationOf(method);
-    if (methodAnnotation == null) return '';
+String methodImpl(MethodElement method) {
+  final methodAnnotation = Checker.method.firstAnnotationOf(method);
+  if (methodAnnotation == null) return '';
 
-    final returnType = method.returnType;
-    if (!returnType.isDartAsyncFuture) {
-      throw InvalidGenerationSourceError(
-        'Return type of `${method.name}` must be a Future.',
-        element: method,
-      );
-    }
+  final returnType = method.returnType;
+  if (!returnType.isDartAsyncFuture) {
+    throw InvalidGenerationSourceError(
+      'Return type of `${method.name}` must be a Future.',
+      element: method,
+    );
+  }
 
-    final methodReader = MethodAnnotation(ConstantReader(methodAnnotation));
-    final httpMethod = methodReader.method;
-    final path = methodReader.path;
+  final methodReader = MethodAnnotation(ConstantReader(methodAnnotation));
+  final httpMethod = methodReader.method;
+  final path = methodReader.path;
 
-    final futureType = (returnType as InterfaceType).typeArguments.first;
+  final futureType = (returnType as InterfaceType).typeArguments.first;
 
-    if (futureType is! InterfaceType &&
-        futureType is! RecordType &&
-        futureType is! DynamicType &&
-        futureType is! VoidType) {
-      throw InvalidGenerationSourceError(
-        'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>',
-        element: method,
-      );
-    }
-    final hasQuery = hasQueryParameters(method.formalParameters);
+  if (futureType is! InterfaceType &&
+      futureType is! RecordType &&
+      futureType is! DynamicType &&
+      futureType is! VoidType) {
+    throw InvalidGenerationSourceError(
+      'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>',
+      element: method,
+    );
+  }
+  final hasQuery = hasQueryParameters(method.formalParameters);
 
-    final fragments = Checker.fragment.annotatedOf(method.formalParameters);
-    if (fragments.isNotEmpty && fragments.length > 1) {
-      throw InvalidGenerationSourceError(
-        'Method `${method.name}` has multiple parameters annotated with `@Fragment`. '
-        'Only one `@Fragment` parameter is allowed per method.',
-        element: method,
-      );
-    }
-    final fragment = fragments.firstOrNull;
+  final fragments = Checker.fragment.annotatedOf(method.formalParameters);
+  if (fragments.isNotEmpty && fragments.length > 1) {
+    throw InvalidGenerationSourceError(
+      'Method `${method.name}` has multiple parameters annotated with `@Fragment`. '
+      'Only one `@Fragment` parameter is allowed per method.',
+      element: method,
+    );
+  }
+  final fragment = fragments.firstOrNull;
 
-    final fields = defineFieldsMap(method);
-
-    final isMultipart =
-        methodReader.multipart == true ||
-        Checker.field.annotatedOf(method.formalParameters).any((param) {
-          final type = param.element.type;
-          if (Checker.validFile.isAssignableFromType(type)) return true;
-          return false;
-        });
-
-    return '''
+  return '''
   ${methodSignature(method)} async {
     ${[
-      'Uri \$uri = \$buildUrl(${modifyPath(path, method.formalParameters)});',
-      if (hasQuery || fragment != null) [
-          '\$uri = \$uri.replace(', //
-          if (hasQuery) 'queryParameters: ${createQuery('\$uri', method.formalParameters)},', //
-          if (fragment != null) 'fragment: ${fragment.element.name},',
-          ');',
-        ].join('\n'),
-    ].join('\n')}
-    final \$request = await #{{http_annotation|createRequest}}(${[
-      (escapeDartString(httpMethod)),
-      r'$uri',
-      if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger',
-      if (isMultipart) 'multipart: true',
-      if (fields != null) 'fields: $fields',
-      if (requestBody(method) case (final body, final kind)) switch (kind) {
-          BodyKind.body => 'body: $body',
-          BodyKind.bodyBytes => 'bodyBytes: $body',
-          BodyKind.stream => 'bodyStream: $body',
-        },
-      // consider additional headers
-      if (methodReader.headersCode case final headers?) 'headers: $headers',
-      //
-    ].join(',\n')});
+    'Uri \$uri = \$buildUrl(${modifyPath(path, method.formalParameters)});',
+    if (hasQuery || fragment != null) [
+        '\$uri = \$uri.replace(', //
+        if (hasQuery) 'queryParameters: ${createQuery('\$uri', method.formalParameters)},', //
+        if (fragment != null) 'fragment: ${fragment.element.name},',
+        ');',
+      ].join('\n'),
+  ].join('\n')}
+    final \$request = await #{{http_annotation|createRequest2}}(${[
+    escapeDartString(httpMethod),
+    '\$uri',
+    if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger', //
+    if (requestBody(method) case final body?) 'body: $body', //
+    if (methodReader.headersCode case final headers?) 'headers: $headers',
+  ]}.join(',\n')});
 
     return ${() sync* {
-      yield r'$send($request)';
-      if (Checker.streamedResponse.isExactlyType(futureType)) return;
-      yield '.then(#{{http|Response}}.fromStream)';
-      if (Checker.response.isAssignableFromType(futureType) || futureType is VoidType) return;
-      yield '.then((response) => ${Coding.decodeResponse('response', futureType, decodingFactories(method))})';
-    }().join('\n')};
+    yield r'$send($request)';
+    if (Checker.streamedResponse.isExactlyType(futureType)) return;
+    yield '.then(#{{http|Response}}.fromStream)';
+    if (Checker.response.isAssignableFromType(futureType) || futureType is VoidType) return;
+    yield '.then((response) => ${Coding.decodeResponse('response', futureType, method.library, decodingFactories(method))})';
+  }().join('\n')};
   }
 ''';
-  }
+}
 
-  String? abortTrigger(MethodElement method) {
-    final cancels = Checker.cancel.annotatedOf(method.formalParameters);
-    if (cancels.isEmpty) return null;
+String? abortTrigger(MethodElement method) {
+  final cancels = Checker.cancel.annotatedOf(method.formalParameters);
+  if (cancels.isEmpty) return null;
 
-    final futures = <String>[];
-    for (final cancel in cancels) {
-      final type = cancel.element.type;
-      final name = cancel.element.name!;
-      if (Checker.cancelToken.isAssignableFromType(type)) {
-        futures.add('$name.whenCancel');
-      } else if (Checker.future.isAssignableFromType(type)) {
-        futures.add(name);
-      } else {
-        throw InvalidGenerationSourceError(
-          'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
-          element: cancel.element,
-        );
-      }
+  final futures = <String>[];
+  for (final cancel in cancels) {
+    final type = cancel.element.type;
+    final name = cancel.element.name!;
+    if (Checker.cancelToken.isAssignableFromType(type)) {
+      futures.add('$name.whenCancel');
+    } else if (Checker.future.isAssignableFromType(type)) {
+      futures.add(name);
+    } else {
+      throw InvalidGenerationSourceError(
+        'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
+        element: cancel.element,
+      );
     }
-
-    if (futures.length == 1) return futures.single;
-    return '#{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
   }
 
-  String modifyPath(
-    String path,
-    List<FormalParameterElement> formalParameters,
+  if (futures.length == 1) return futures.single;
+  return '#{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
+}
+
+String modifyPath(String path, List<FormalParameterElement> formalParameters) {
+  final pathParameters = Checker.path
+      .annotatedOf(formalParameters)
+      .map(
+        (param) => (
+          path: PathAnnotation(param.annotation).value,
+          paramName: param.element.name!,
+        ),
+      );
+
+  final map = {
+    for (final (:path, :paramName) in pathParameters)
+      path ?? paramName: paramName,
+  };
+
+  return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
+    match,
   ) {
-    final pathParameters = Checker.path
-        .annotatedOf(formalParameters)
-        .map(
-          (param) => (
-            path: PathAnnotation(param.annotation).value,
-            paramName: param.element.name!,
-          ),
-        );
+    final key = match.group(1)!;
+    final name = map[key];
+    if (name == null) return match.group(0)!;
+    return '\${$name}';
+  });
+}
 
-    final map = {
-      for (final (:path, :paramName) in pathParameters)
-        path ?? paramName: paramName,
-    };
+//==========================//
+bool hasQueryParameters(List<FormalParameterElement> formalParameters) {
+  final queryParameters = Checker.query.annotatedOf(formalParameters);
+  final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
+  return queryParameters.isNotEmpty || queryAllParameters.isNotEmpty;
+}
 
-    return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
-      match,
-    ) {
-      final key = match.group(1)!;
-      final name = map[key];
-      if (name == null) return match.group(0)!;
-      return '\${$name}';
-    });
-  }
+String createQuery(String uri, List<FormalParameterElement> formalParameters) {
+  final queryParameters = Checker.query.annotatedOf(formalParameters);
+  final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
 
-  //==========================//
-  bool hasQueryParameters(List<FormalParameterElement> formalParameters) {
-    final queryParameters = Checker.query.annotatedOf(formalParameters);
-    final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
-    return queryParameters.isNotEmpty || queryAllParameters.isNotEmpty;
-  }
-
-  String createQuery(
-    String uri,
-    List<FormalParameterElement> formalParameters,
-  ) {
-    final queryParameters = Checker.query.annotatedOf(formalParameters);
-    final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
-
-    return '''{
+  return '''{
     ...$uri.queryParametersAll,
     ${queryAllParameters.map((param) {
-      if (param.element.type.isDartCoreMap) return '...${param.element.name!},';
-      if (param.element.type case InterfaceType type) {
-        // TODO: more robust query serialization
-        final encode = type.allMethods.where((m) => m.name == 'toJson' || m.name == 'toMap');
-        for (final m in encode) {
-          if (m.returnType.isDartCoreMap && m.formalParameters.isEmpty) {
-            return '...${param.element.name!}.${m.name}(),';
-          }
+    if (param.element.type.isDartCoreMap) return '...${param.element.name!},';
+    if (param.element.type case InterfaceType type) {
+      // TODO: more robust query serialization
+      final encode = type.allMethods.where((m) => m.name == 'toJson' || m.name == 'toMap');
+      for (final m in encode) {
+        if (m.returnType.isDartCoreMap && m.formalParameters.isEmpty) {
+          return '...${param.element.name!}.${m.name}(),';
         }
-        // TODO: possibly allow arguments later
-        throw InvalidGenerationSourceError('Parameter `${param.element.name}` annotated with `@QueryAll` must be of type `Map<String, dynamic>` or provide a `toJson` or `toMap` method that returns a `Map<String, dynamic>` without arguments.', element: param.element);
       }
-    }).join('\n')}
+      // TODO: possibly allow arguments later
+      throw InvalidGenerationSourceError('Parameter `${param.element.name}` annotated with `@QueryAll` must be of type `Map<String, dynamic>` or provide a `toJson` or `toMap` method that returns a `Map<String, dynamic>` without arguments.', element: param.element);
+    }
+  }).join('\n')}
     ${queryParameters.map((param) {
-      final queryKey = param.annotation.read('name').stringValue;
-      final paramName = param.element.name!;
-      return '${escapeDartString(queryKey)}: $paramName,';
-    }).join('\n')}
-  }..removeWhere((_, value) => value == null)''';
-  }
+    final queryKey = param.annotation.read('name').stringValue;
+    final paramName = param.element.name!;
+    return '${escapeDartString(queryKey)}: $paramName,';
+  }).join('\n')}
+  }''';
 }
 
 String methodSignature(MethodElement method) {
@@ -255,11 +231,53 @@ String typeParametersToCode(List<TypeParameterElement> typeParameters) {
   }).join(', ')}>';
 }
 
-enum BodyKind { body, bodyBytes, stream }
+extension on ConstantReader {
+  BodyType get bodyTypeValue {
+    final bodyTypeObj = read('bodyType').nullOr?.objectValue;
+    if (bodyTypeObj == null) return BodyType.custom;
+    final index = ConstantReader(bodyTypeObj).read('index').intValue;
+    return BodyType.values[index];
+  }
+}
 
-(String, BodyKind)? requestBody(MethodElement method) {
+enum RequestType { fields, multipart, body }
+
+RequestType requestTypeOf(MethodElement method) {
+  if (Checker.field.annotatedOf(method.formalParameters).isNotEmpty) {
+    return RequestType.fields;
+  }
+  if (Checker.fields.annotatedOf(method.formalParameters).isNotEmpty) {
+    return RequestType.fields;
+  }
+  if (Checker.body.annotatedOf(method.formalParameters).isNotEmpty) {
+    return RequestType.body;
+  }
+  return RequestType.body;
+}
+
+// must return an Encoded
+String? requestBody(MethodElement method) {
+  const encoded = '#{{http_annotation|Encoded}}';
+
   final bodyParameters = Checker.body.annotatedOf(method.formalParameters);
-  if (bodyParameters.isEmpty) return null;
+  if (bodyParameters.isEmpty) {
+    final fields = defineFieldsMap(method);
+
+    final isMultipart = Checker.field.annotatedOf(method.formalParameters).any((
+      param,
+    ) {
+      final type = param.element.type;
+      if (Checker.validFile.isAssignableFromType(type)) return true;
+      return false;
+    });
+
+    if (fields == null) return null;
+    if (isMultipart) {
+      return '$encoded.multipart($fields)';
+    } else {
+      return '$encoded.form($fields)';
+    }
+  }
 
   if (bodyParameters.length > 1) {
     throw InvalidGenerationSourceError(
@@ -274,45 +292,108 @@ enum BodyKind { body, bodyBytes, stream }
   final type = param.element.type;
   final name = param.element.name!;
 
-  if (Checker.implementsStreamListInt(type)) return (name, BodyKind.stream);
-  if (Checker.stream.isAssignableFromType(type)) {
-    // works with ByteStream and other such subtypes
-    throw InvalidGenerationSourceError(
-      'Parameter `$name` annotated with `@Body` is a Stream, but is not a Stream<List<int>>.'
-      ' Found type: `${type.getDisplayString()}`.',
-      element: param.element,
-    );
+  final bodyType = param.annotation.read('bodyType').nullOr?.bodyTypeValue;
+
+  // final isInferred = bodyType == null;
+  switch (bodyType) {
+    stream:
+    case BodyType.stream:
+      if (!Checker.implementsStreamListInt(type)) {
+        log.warning(
+          [
+            'Type of `$name` is `${type.getDisplayString()}`, which is not a `Stream<List<int>>`.',
+            'Please either change the parameter type to `Stream<List<int>>` or `Stream<Uint8List>`,'
+                ' or specify a custom decoder with `@Body.custom()` and implement the encoding logic yourself.',
+          ].join('\n'),
+        );
+        continue custom;
+      }
+      return '$encoded.stream($name)';
+    bytes:
+    case BodyType.bytes:
+      if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        return '$encoded.bytes($name.writeToBuffer())';
+      }
+      if (!Checker.implementsListInt(type)) {
+        log.warning(
+          [
+            'Type of `$name` is `${type.getDisplayString()}`, which is not a `List<int>` or `Uint8List`.',
+            'Please either change the parameter type to `List<int>` or `Uint8List`,'
+                ' or specify a custom decoder with `@Body.custom()` and implement the encoding logic yourself.',
+          ].join('\n'),
+        );
+        continue custom;
+      }
+      return '$encoded.bytes($name)';
+    string:
+    case BodyType.string:
+      if (type.isDartCoreString || Checker.string.isAssignableFromType(type)) {
+        return '$encoded.string($name)';
+      }
+      if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        return '$encoded.string($name.toTextFormat())';
+      }
+      return '$encoded.string($name.toString())';
+    json:
+    case BodyType.json:
+      if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        return '$encoded.string($name.writeToJson())';
+      }
+      try {
+        final bodyEncodable = Coding.bodyEncodable(
+          type,
+          ConverterContext(name, {
+            for (final tp in method.typeParameters)
+              tp: (context) {
+                // myFunc<@TConverter() T>()
+                final converterAnnotation = Checker.jsonConverter
+                    .firstAnnotationOfExact(tp);
+                if (converterAnnotation != null) {
+                  return '#{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}))';
+                }
+                throw InvalidGenerationSourceError(
+                  'Generic type parameter `${tp.name}` must have a factory for serialization. '
+                  'Either provide a `@JsonConverter` annotation or avoid using generic types.',
+                  element: tp,
+                );
+              },
+          }, method.library),
+          Checker.jsonConverter.firstAnnotationOf(param.element),
+        );
+        return '$encoded.string(#{{dart:convert|jsonEncode}}($bodyEncodable))';
+      } catch (e, s) {
+        log.severe(
+          'Failed to generate JSON encoding for parameter `$name` of type `${type.getDisplayString()}`',
+          e,
+          s,
+        );
+        continue custom;
+      }
+
+    custom:
+    case BodyType.custom:
+      return "throw UnimplementedError('Custom body encoding is not implemented. Please implement the encoding logic for parameter `$name` manually.')";
+    case null:
+      // inference!
+      if (Checker.string.isAssignableFromType(type)) continue string;
+      if (Checker.implementsStreamListInt(type)) continue stream;
+      if (Checker.implementsListInt(type)) continue bytes;
+      if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        log.info(
+          'Parameter `$name` is of type `${type.getDisplayString()}`, which is a protobuf message. '
+          'Inferring body type as Bytes. If this is not what you intended, please specify the body type explicitly with `@Body.json()` or implement a custom encoder with `@Body.custom()`.',
+        );
+        continue bytes;
+      }
+      if (type is InterfaceType) {
+        if (type.getMethod('toJson') != null) continue json;
+        if (type.getMethod('toMap') != null) continue json;
+      }
+      continue json;
   }
-
-  if (Checker.implementsListInt(type)) return (name, BodyKind.bodyBytes);
-
-  final bool raw = param.annotation.read('raw').boolValue;
-  if (raw) return ('$name.toString()', BodyKind.body);
-
-  final bodyEncodable = Coding.bodyEncodable(
-    type,
-    ConverterContext(name, {
-      for (final tp in method.typeParameters)
-        tp: (context) {
-          // myFunc<@TConverter() T>()
-          final converterAnnotation = Checker.jsonConverter
-              .firstAnnotationOfExact(tp);
-          if (converterAnnotation != null) {
-            return '#{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}))';
-          }
-          throw InvalidGenerationSourceError(
-            'Generic type parameter `${tp.name}` must have a factory for serialization. '
-            'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-            element: tp,
-          );
-        },
-    }),
-    Checker.jsonConverter.firstAnnotationOf(param.element),
-  );
-  return ('#{{dart:convert|jsonEncode}}($bodyEncodable)', BodyKind.body);
 }
 
-/// returns a `Map<String, Object?>`
+/// returns a `Map<String, String>`
 String? defineFieldsMap(MethodElement method) {
   final formFieldParameters = Checker.field.annotatedOf(
     method.formalParameters,
@@ -329,7 +410,7 @@ String? defineFieldsMap(MethodElement method) {
     final paramName = param.element.name!;
     final encoded = Coding.bodyEncodable(
       param.element.type,
-      ConverterContext(paramName, decodingFactories(method)),
+      ConverterContext(paramName, decodingFactories(method), method.library),
       Checker.jsonConverter.firstAnnotationOf(param.element),
     );
     final fieldName = param.annotation.read('name').stringValue;
@@ -350,7 +431,7 @@ String? defineFieldsMap(MethodElement method) {
     } else if (param.element.type case InterfaceType type) {
       final encoding = Coding.bodyEncodable(
         type,
-        ConverterContext(paramName, decodingFactories(method)),
+        ConverterContext(paramName, decodingFactories(method), method.library),
         Checker.jsonConverter.firstAnnotationOf(param.element),
       );
       lines.add('...$encoding');
@@ -388,6 +469,7 @@ class Coding {
   static String decodeResponse(
     String response,
     DartType type,
+    LibraryElement library,
     GenericFactories factories, [
     DartObject? jsonConverter,
   ]) {
@@ -397,7 +479,7 @@ class Coding {
     final json = '#{{dart:convert|jsonDecode}}($response.body)';
     return Coding().jsonDecoding(
       type,
-      ConverterContext(json, factories),
+      ConverterContext(json, factories, library),
       jsonConverter,
     );
   }

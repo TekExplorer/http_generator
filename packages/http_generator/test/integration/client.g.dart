@@ -247,6 +247,19 @@ mixin _$A implements $GeneratedClient {
       ),
     );
 
+    final $request2 = await createRequest2(
+      'POST',
+      $uri,
+      abortTrigger: abortTrigger,
+      body: Encoded.string(
+        jsonEncode(
+          body.toJson(
+            (object) => object.map((k, v) => MapEntry(k, v.toJson())),
+          ),
+        ),
+      ),
+    );
+
     return $send($request)
         .then(Response.fromStream)
         .then(

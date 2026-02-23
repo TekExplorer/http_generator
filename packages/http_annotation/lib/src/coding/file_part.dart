@@ -1,9 +1,7 @@
-import 'dart:async';
-
-import 'package:http/http.dart' as http;
+part of 'coding.dart';
 
 /// An intermediary representation of [http.MultipartFile] That does not require the field name, which is determined by the parameter name in the endpoint method.
-sealed class FilePart {
+abstract final class FilePart implements MultipartValue {
   factory FilePart(
     Stream<List<int>> stream,
     int length, {
@@ -35,10 +33,10 @@ sealed class FilePart {
   factory FilePart.fromMultipartFile(http.MultipartFile multipartFile) =
       _FilePartFromMultipartFile;
 
-  FutureOr<http.MultipartFile> toMultipartFile(String field);
+  FutureOr<http.MultipartFile> toHttpMultipartFile(String field);
 }
 
-class _FilePartFromStream implements FilePart {
+final class _FilePartFromStream implements FilePart {
   _FilePartFromStream(
     this.stream,
     this.length, {
@@ -51,7 +49,7 @@ class _FilePartFromStream implements FilePart {
   final http.MediaType? contentType;
 
   @override
-  http.MultipartFile toMultipartFile(String field) => http.MultipartFile(
+  http.MultipartFile toHttpMultipartFile(String field) => http.MultipartFile(
     field,
     stream,
     length,
@@ -60,14 +58,14 @@ class _FilePartFromStream implements FilePart {
   );
 }
 
-class _FilePartFromBytes implements FilePart {
+final class _FilePartFromBytes implements FilePart {
   _FilePartFromBytes(this.bytes, {this.filename, this.contentType});
   final List<int> bytes;
   final String? filename;
   final http.MediaType? contentType;
 
   @override
-  http.MultipartFile toMultipartFile(String field) =>
+  http.MultipartFile toHttpMultipartFile(String field) =>
       http.MultipartFile.fromBytes(
         field,
         bytes,
@@ -76,14 +74,14 @@ class _FilePartFromBytes implements FilePart {
       );
 }
 
-class _FilePartFromString implements FilePart {
+final class _FilePartFromString implements FilePart {
   _FilePartFromString(this.content, {this.filename, this.contentType});
   final String content;
   final String? filename;
   final http.MediaType? contentType;
 
   @override
-  http.MultipartFile toMultipartFile(String field) =>
+  http.MultipartFile toHttpMultipartFile(String field) =>
       http.MultipartFile.fromString(
         field,
         content,
@@ -92,14 +90,14 @@ class _FilePartFromString implements FilePart {
       );
 }
 
-class _FilePartFromPath implements FilePart {
+final class _FilePartFromPath implements FilePart {
   _FilePartFromPath(this.filePath, {this.filename, this.contentType});
   final String filePath;
   final String? filename;
   final http.MediaType? contentType;
 
   @override
-  Future<http.MultipartFile> toMultipartFile(String field) =>
+  Future<http.MultipartFile> toHttpMultipartFile(String field) =>
       http.MultipartFile.fromPath(
         field,
         filePath,
@@ -108,10 +106,10 @@ class _FilePartFromPath implements FilePart {
       );
 }
 
-class _FilePartFromMultipartFile implements FilePart {
+final class _FilePartFromMultipartFile implements FilePart {
   _FilePartFromMultipartFile(this.multipartFile);
   final http.MultipartFile multipartFile;
 
   @override
-  http.MultipartFile toMultipartFile(String field) => multipartFile;
+  http.MultipartFile toHttpMultipartFile(String field) => multipartFile;
 }

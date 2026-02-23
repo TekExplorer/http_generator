@@ -6,11 +6,12 @@ typedef GenericFactories =
 typedef Factories = Map<DartType, String Function(ConverterContext)>;
 
 class ConverterContext {
-  ConverterContext(this.varName, this.factories);
+  ConverterContext(this.varName, this.factories, this.library);
 
   final String varName;
   final GenericFactories factories;
+  final LibraryElement library;
   ConverterContext withVar(String newVarName) {
-    return ConverterContext(newVarName, factories);
+    return ConverterContext(newVarName, factories, library);
   }
 }

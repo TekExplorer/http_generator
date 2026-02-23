@@ -3,7 +3,105 @@ import 'dart:convert' show Encoding;
 
 import 'package:http/http.dart' as http;
 
-import 'file_part.dart';
+import 'coding/coding.dart';
+
+extension<T> on FutureOr<T> {
+  FutureOr<R> then<R>(FutureOr<R> Function(T value) onValue) => switch (this) {
+    Future<T> self => self.then(onValue),
+    T self => onValue(self),
+  };
+
+  // Future<T> get asFuture => switch (this) {
+  //   Future<T> self => self,
+  //   T self => Future.syncValue(self),
+  // };
+}
+
+Future<http.Abortable> createRequest2(
+  String method,
+  Uri url, {
+  Future<void>? abortTrigger,
+  Encoded? body,
+  Map<String, String>? headers,
+}) async {
+  final request = await _createRequest(
+    method,
+    url,
+    abortTrigger: abortTrigger,
+    body: body,
+  );
+
+  if (headers != null) request.headers.addAll(headers);
+
+  return request;
+}
+
+Future<http.Abortable> _createRequest(
+  String method,
+  Uri url, {
+  Future<void>? abortTrigger,
+  Encoded? body,
+}) async {
+  switch (body) {
+    case EncodedStream():
+      final request = http.AbortableStreamedRequest(
+        method,
+        url,
+        abortTrigger: abortTrigger,
+      );
+
+      request.sink.addStream(body.stream());
+
+      void setContentLength(int? length) {
+        if (length == null) return;
+        if (request.finalized) return;
+        request.contentLength = length;
+      }
+
+      body.contentLengthUpdates?.listen(setContentLength);
+      body.contentLength?.then(setContentLength);
+
+      return request;
+    case EncodedMultipart():
+      final request = http.AbortableMultipartRequest(
+        method,
+        url,
+        abortTrigger: abortTrigger,
+      );
+      final fields = (await body.fields).split;
+
+      request.fields.addAll(fields.fields.map((k, v) => MapEntry(k, v.value)));
+
+      await fields.files.entries.map((entry) async {
+        final file = entry.value;
+        request.files.add(await file.toHttpMultipartFile(entry.key));
+      }).wait;
+      return request;
+    case SimpleEncoded? body:
+      final request = http.AbortableRequest(
+        method,
+        url,
+        abortTrigger: abortTrigger,
+      );
+
+      if (body?.encoding case final encoding?) request.encoding = encoding;
+
+      switch (body) {
+        case EncodedBytes():
+          request.bodyBytes = await body.bytes;
+        case EncodedString():
+          request.body = await body.string;
+        case EncodedFields():
+          request.bodyFields = {
+            for (final entry in (await body.fields).entries)
+              entry.key: ?entry.value,
+          };
+        case null:
+      }
+
+      return request;
+  }
+}
 
 Future<http.Abortable> createRequest(
   String method,
@@ -24,7 +122,7 @@ Future<http.Abortable> createRequest(
   // we dont always know if a multipart request just doesn't have any,
   bool multipart = false,
   Map<String, Object?>? fields,
-  Map<String, String? Function(Object?)>? convertOverrides,
+  // Map<String, String? Function(Object?)>? convertOverrides,
   // headers
   Map<String, String>? headers,
   void Function(Map<String, String> headers)? modifyHeaders,
@@ -61,7 +159,7 @@ Future<http.Abortable> createRequest(
     encoding: encoding,
     multipart: multipart,
     fields: fields,
-    convertOverrides: convertOverrides,
+    // convertOverrides: convertOverrides,
     headers: headers,
     modifyHeaders: modifyHeaders,
   );
@@ -132,7 +230,7 @@ Future<http.Abortable> _createNonStreamRequest(
   http.MediaType? contentType,
   // form fields and multipart files
   Map<String, Object?>? fields,
-  Map<String, String? Function(Object?)>? convertOverrides,
+  // Map<String, String? Function(Object?)>? convertOverrides,
   bool multipart = false,
   // headers
   Map<String, String>? headers,
@@ -143,7 +241,10 @@ Future<http.Abortable> _createNonStreamRequest(
     modifyHeaders?.call(requestHeaders);
   }
 
-  final form = _mapToFields(fields, convertOverrides);
+  final form = _mapToFields(
+    fields,
+    //  convertOverrides,
+  );
   if (multipart) {
     final request = http.AbortableMultipartRequest(
       method,
@@ -158,7 +259,7 @@ Future<http.Abortable> _createNonStreamRequest(
     request.fields.addAll(form.fields);
     for (final entry in form.files.entries) {
       final file = entry.value;
-      request.files.add(await file.toMultipartFile(entry.key));
+      request.files.add(await file.toHttpMultipartFile(entry.key));
     }
     return request;
   }
@@ -199,9 +300,9 @@ extension on int {
 }
 
 ({Map<String, String> fields, Map<String, FilePart> files})? _mapToFields(
-  Map<String, Object?>? map, [
-  Map<String, String? Function(Object? object)>? convertOverrides,
-]) {
+  Map<String, Object?>? map,
+  // [Map<String, String? Function(Object? object)>? convertOverrides,]
+) {
   if (map == null) return null;
 
   final fileParts = <String, FilePart>{};
@@ -216,7 +317,8 @@ extension on int {
     if (value is FilePart) {
       fileParts[entry.key] = value;
     } else {
-      final convert = convertOverrides?[entry.key] ?? (v) => v?.toString();
+      // final convert = convertOverrides?[entry.key] ?? (v) => v?.toString();
+      String? convert(v) => v?.toString();
       if (convert(value) case final result?) fields[entry.key] = result;
     }
   }
