@@ -1,14 +1,25 @@
 part of '../generator.dart';
 
 class RequestBody {
-  RequestBody(this.method, this.addMethod);
+  RequestBody(this.method, this.methodAnnotation, this.addMember);
   final MethodElement method;
-  final void Function(String method) addMethod;
+
+  final MethodAnnotation methodAnnotation;
+
+  bool get isMultipart {
+    if (Checker.annotation('_Multipart').hasAnnotationOf(method)) return true;
+    if (methodAnnotation.multipart == true) return true;
+    return false;
+  }
+
+  final void Function(String method) addMember;
 
   static const encoded = '#{{http_annotation|BodyEncoded}}';
 
   @protected
-  RequestType _requestTypeOf() {
+  RequestType get _requestType {
+    if (isMultipart) return RequestType.multipart;
+
     if (Checker.field.annotatedOf(method.formalParameters).isNotEmpty) {
       return RequestType.fields;
     }
@@ -21,7 +32,7 @@ class RequestBody {
     return RequestType.none;
   }
 
-  String? buildEncoded() => switch (_requestTypeOf()) {
+  String? buildEncoded() => switch (_requestType) {
     RequestType.fields => _buildFields(),
     RequestType.multipart => _buildMultipart(),
     RequestType.body => _buildBody(),
@@ -34,7 +45,7 @@ class RequestBody {
 
   @protected
   String? _buildMultipart() =>
-      '#{{http_annotation|Encoded}}.multipart(${_defineMultipartMap()})';
+      'await #{{http_annotation|EncodedMultipart}}.build(${_defineMultipartBuilder()})';
 
   @protected
   // must return an Encoded
@@ -60,7 +71,7 @@ class RequestBody {
 
     String? buildCustom() {
       final methodName = '_${method.name}Encode';
-      addMethod(
+      addMember(
         '@#{{meta|protected}} #{{dart:async|FutureOr}}<$encoded> $methodName(${type.toCode()} $name);',
       );
       return 'await $methodName($name)';
@@ -176,55 +187,150 @@ class RequestBody {
   }
 
   @protected
-  String? _defineMultipartMap() {
+  String? _defineMultipartBuilder() {
     final lines = <String>[];
+    const request = r'$request';
 
     final field = Checker.field.annotatedOf(method.formalParameters);
+
+    final customParameters = <FormalParameterElement>[];
+
     for (final param in field) {
       final paramName = param.element.name!;
       final fieldName =
           param.annotation.read('name').nullOr?.stringValue ?? paramName;
+
+      final paramType = param.element.type;
+
       final useCustom = param.annotation.read('custom').boolValue;
 
       if (useCustom) {
-        lines.add(
-          "${escapeDartString(fieldName)}: throw UnimplementedError('Custom multipart encoding is not implemented for parameter `$paramName`. Please implement the encoding logic manually.')",
-        );
+        customParameters.add(param.element);
         continue;
+      } else if (paramType.isA(Checker.string)) {
+        lines.add(
+          '$request.fields[${escapeDartString(fieldName)}] = $paramName;',
+        );
+      } else if (paramType.isA(
+        .any([
+          // .fromUrl('dart:io#File'),
+          .fromUrl('dart:core#num'),
+          .fromUrl('dart:core#bool'),
+        ]),
+      )) {
+        final q = paramType.nullabilitySuffix == .question ? '?' : '';
+        lines.add(
+          '$request.fields[${escapeDartString(fieldName)}] = $paramName$q.toString();',
+        );
+      } else if (paramType.isA(Checker.filePart)) {
+        lines.add(
+          '$request.files[${escapeDartString(fieldName)}] = $paramName;',
+        );
+      } else if (paramType.isA(Checker.from('http#MultipartFile'))) {
+        lines.add(
+          '$request.files[${escapeDartString(fieldName)}] = .fromMultipartFile($paramName);',
+        );
+      } else {
+        log.warning(
+          'Parameter `${param.element.name}` has unsupported type `${paramType.getDisplayString()}` for multipart encoding. Please either change the parameter type to `String`, `num`, `bool`, `FilePart`, or `http.MultipartFile`, or specify a custom encoder with `@Field(custom: true)` and implement the encoding logic yourself.',
+        );
+        customParameters.add(param.element);
       }
-
-      lines.add('${escapeDartString(fieldName)}: $paramName');
     }
 
     final fields = Checker.fields.annotatedOf(method.formalParameters);
 
     for (final param in fields) {
       final paramName = param.element.name!;
+
+      final paramType = param.element.type;
+
       final useCustom = param.annotation.read('custom').boolValue;
 
       if (useCustom) {
-        lines.add(
-          "throw UnimplementedError('Custom multipart encoding is not implemented for parameter `$paramName`. Please implement the encoding logic manually.')",
-        );
+        customParameters.add(param.element);
         continue;
+      } else if (Checker.map.isAssignableFromType(paramType)) {
+        final [keyType, valueType] = paramType.typeArgumentsOf(Checker.map)!;
+        if (!Checker.string.isAssignableFromType(keyType)) {
+          throw InvalidGenerationSourceError(
+            'Parameter `${param.element.name}` annotated with `@Fields()` must be of type `Map<String, T>`.',
+            element: param.element,
+          );
+        }
+        if (Checker.string.isAssignableFromType(valueType)) {
+          // its a Map<String, String>
+          lines.add('$request.fields.addAll($paramName);');
+          continue;
+        } else {
+          lines.add('''
+    for (final entry in $paramName.entries) {
+      if (entry.value is null) continue;
+      $request.fields[entry.key] = entry.value.toString();
+    }
+''');
+          continue;
+        }
+      } else if (paramType is InterfaceType) {
+        final toMapMethod =
+            paramType.getMethod('toMap') ?? paramType.getMethod('toJson');
+
+        if (toMapMethod == null) {
+          throw InvalidGenerationSourceError(
+            'Parameter `${param.element.name}` annotated with `@Fields()` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
+            element: param.element,
+          );
+        }
+
+        final mapSource = '$paramName.${toMapMethod.name}()';
+        if (Checker.map.isAssignableFromType(toMapMethod.returnType)) {
+          final [keyType, valueType] = toMapMethod.returnType.typeArgumentsOf(
+            Checker.map,
+          )!;
+          if (!Checker.string.isAssignableFromType(keyType) ||
+              !Checker.string.isAssignableFromType(valueType)) {
+            throw InvalidGenerationSourceError(
+              'The `toMap` or `toJson` method of parameter `${param.element.name}` annotated with `@Fields()` must return a `Map<String, String>`.',
+              element: param.element,
+            );
+          }
+          lines.add('$request.fields.addAll($mapSource);');
+          continue;
+        }
+
+        // TODO: see if we want more types to work
+        lines.add('''
+    for (final entry in $mapSource.entries) {
+      switch (entry.value) {
+        case null:
+          continue;
+        case FilePart value:
+          $request.files[entry.key] = value;
+        default:
+          $request.fields[entry.key] = entry.value.toString();
       }
-
-      if (Checker.map.isAssignableFromType(param.element.type)) {
-        // we assume it's a Map<String, String>
-        lines.add('...$paramName');
-        continue;
+    }
+''');
       }
-
-      final encoded = Coding.bodyEncodable(
-        param.element.type,
-        ConverterContext(paramName, decodingFactories(method), method.library),
-        Checker.jsonConverter.firstAnnotationOf(param.element),
-      );
-
-      lines.add('...$encoded');
     }
 
-    return '{${lines.join(',\n')}}';
+    if (customParameters.isNotEmpty) {
+      final methodName = '_${method.name}BuildMultipart';
+
+      final customParamNames = customParameters.map((e) => e.name).join(', ');
+      log.warning(
+        'The following parameters are annotated with `@Field(custom: true)`, `@Fields(custom: true)` or could not be encoded automatically and require custom encoding logic: $customParamNames.'
+        ' Please implement the encoding logic for these parameters by implementing $methodName.',
+      );
+      addMember('''
+@#{{meta|protected}} #{{dart:async|FutureOr}}<void> $methodName(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()});
+''');
+      lines.add(
+        'await $methodName($request, ${customParameters.toCallCode()});',
+      );
+    }
+
+    return '($request) async {\n${lines.join('\n')}\n}';
   }
 
   @protected

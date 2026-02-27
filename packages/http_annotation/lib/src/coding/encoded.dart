@@ -1,7 +1,9 @@
 part of 'coding.dart';
 
+typedef OnProgressCallback = void Function(int loaded, int total);
+
 /// This class is used to safely represent the encoded body of a request,
-/// which can be a [_stream], [bytes], [string], query/form [fields], or [multipart] fields.
+/// which can be a [_stream], [bytes], [string], query/form [parts], or [multipart] fields.
 ///
 /// It is used when encoding the body of a request,
 /// and allows the generator to handle different body types in a consistent way,
@@ -27,6 +29,12 @@ sealed class Encoded {
   /// This represents the fields of a multipart request,
   /// where each field can have multiple values, and can also include files.
   static const multipart = EncodedMultipart.new;
+
+  FutureOr<http.Abortable> createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  });
 }
 
 sealed class BodyEncoded implements Encoded {
@@ -46,63 +54,168 @@ sealed class BodyEncoded implements Encoded {
 }
 
 sealed class SimpleEncoded implements Encoded, BodyEncoded {
+  static const string = EncodedString.new;
+  static const bytes = EncodedBytes.new;
+  static const fields = EncodedFields.new;
+
   SimpleEncoded({this.encoding});
   final Encoding? encoding;
+
+  @override
+  http.AbortableRequest createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  });
 }
 
 final class EncodedStream implements BodyEncoded {
-  EncodedStream(this._stream, {this.contentLength, this.contentLengthUpdates});
+  EncodedStream(this._stream, {this.contentLength});
 
   Stream<List<int>> stream() async* {
     yield* _stream;
   }
 
   final Stream<List<int>> _stream;
-  final FutureOr<int?>? contentLength;
-  final Stream<int>? contentLengthUpdates;
+  final int? contentLength;
+
+  @override
+  http.AbortableStreamedRequest createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  }) {
+    final request = http.AbortableStreamedRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+
+    if (contentLength != null) request.contentLength = contentLength;
+
+    request.sink.addStream(stream());
+
+    return request;
+  }
 }
 
 final class EncodedBytes extends SimpleEncoded {
   EncodedBytes(this.bytes, {super.encoding});
 
   final List<int> bytes;
+
+  @override
+  http.AbortableRequest createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  }) {
+    final request = http.AbortableRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+    if (encoding case final encoding?) request.encoding = encoding;
+    request.bodyBytes = bytes;
+    return request;
+  }
 }
 
 final class EncodedString extends SimpleEncoded {
   EncodedString(this.string, {super.encoding});
   final String string;
+
+  @override
+  http.AbortableRequest createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  }) {
+    final request = http.AbortableRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+    if (encoding case final encoding?) request.encoding = encoding;
+    request.body = string;
+    return request;
+  }
 }
 
 final class EncodedFields extends SimpleEncoded {
-  EncodedFields(this.fields, {super.encoding});
+  EncodedFields(this.parts, {super.encoding});
   EncodedFields.from(Map<String, Object?> fields, {super.encoding})
-    : fields = {
+    : parts = {
         for (final entry in fields.entries) entry.key: ?entry.value?.toString(),
       };
 
-  final Map<String, String> fields;
+  final Map<String, String> parts;
+
+  @override
+  http.AbortableRequest createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  }) {
+    final request = http.AbortableRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+    if (encoding case final encoding?) request.encoding = encoding;
+    request.bodyFields = parts;
+    return request;
+  }
 }
 
-final class EncodedMultipart implements Encoded {
-  EncodedMultipart(this.fields);
-  final Map<String, MultipartValue> fields;
+abstract final class MultipartBuilder {
+  Map<String, String?> get fields;
+  Map<String, FilePart?> get files;
 }
 
-@internal
-extension SplitFields on Map<String, MultipartValue> {
-  ({Map<String, FieldValue> fields, Map<String, FilePart> files}) get split {
-    final fields = <String, FieldValue>{};
-    final fileParts = <String, FilePart>{};
+final class EncodedMultipart implements Encoded, MultipartBuilder {
+  EncodedMultipart({Map<String, String>? fields, Map<String, FilePart>? files})
+    : fields = {...?fields},
+      files = {...?files};
 
-    for (final entry in entries) {
-      switch (entry.value) {
-        case FieldValue value:
-          fields[entry.key] = value;
-        case FilePart value:
-          fileParts[entry.key] = value;
-      }
+  static Future<EncodedMultipart> build(
+    FutureOr<void> Function(EncodedMultipart) builder,
+  ) async {
+    final multipart = EncodedMultipart();
+    await builder(multipart);
+    return multipart;
+  }
+
+  @override
+  final Map<String, String?> fields;
+
+  @override
+  final Map<String, FilePart?> files;
+
+  @override
+  Future<http.AbortableMultipartRequest> createRequest(
+    String method,
+    Uri url, {
+    Future<void>? abortTrigger,
+  }) async {
+    final request = http.AbortableMultipartRequest(
+      method,
+      url,
+      abortTrigger: abortTrigger,
+    );
+
+    request.fields.addAll(fields.nonNulls);
+
+    for (final entry in files.nonNulls.entries) {
+      request.files.add(await entry.value.toHttpMultipartFile(entry.key));
     }
 
-    return (fields: fields, files: fileParts);
+    return request;
   }
+}
+
+extension<V extends Object, K extends Object> on Map<K?, V?> {
+  Map<K, V> get nonNulls => {
+    for (final entry in entries) ?entry.key: ?entry.value,
+  };
 }

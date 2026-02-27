@@ -1,15 +1,5 @@
 import 'package:meta/meta_meta.dart';
 
-// final json = Headers({'Content-Type': 'application/json'});
-// final text = Headers({'Content-Type': 'text/plain'});
-
-// /// Additional headers for a request.
-// @Target({TargetKind.method})
-// final class Headers {
-//   const Headers(this.headers);
-//   final Map<String, String> headers;
-// }
-
 @Target({TargetKind.method})
 final class Method {
   const Method(this.method, this.path, {this.headers, this.multipart});

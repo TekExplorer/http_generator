@@ -1,7 +1,7 @@
 part of 'coding.dart';
 
 /// An intermediary representation of [http.MultipartFile] That does not require the field name, which is determined by the parameter name in the endpoint method.
-abstract final class FilePart implements MultipartValue {
+abstract final class FilePart {
   factory FilePart(
     Stream<List<int>> stream,
     int length, {

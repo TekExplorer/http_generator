@@ -5,6 +5,7 @@ import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
+import '../generator.dart';
 import 'coder_shared.dart';
 
 class JsonEncoderVisitor
@@ -28,12 +29,11 @@ class JsonEncoderVisitor
       return '$varName.map((e) => ${nest(listType, 'e', argument)}).toList()';
     }
     if (type.isDartCoreMap) {
-      final mapType = type.typeArguments;
-      // final keyType = mapType[0];
+      final [keyType, valueType] = type.typeArguments;
       // if (!keyType.isDartCoreString) {
       //   throw InvalidGenerationSourceError('Only Map<String, V> is supported.');
       // }
-      final valueType = mapType[1];
+
       // shortcut so we dont have unnecessary nesting
       if (valueType is DynamicType) return varName;
       if (valueType.isSerializableToJson()) return varName;
@@ -169,10 +169,8 @@ class JsonEncoderVisitor
 
 extension on DartType {
   bool isSerializableToJson() =>
-      _isJsonPrimitive() ||
-      _isJsonMap() ||
-      _isJsonIterable() ||
-      _isJsonObject();
+      _isJsonPrimitive() || _isJsonMap() || _isJsonIterable();
+  //  || _isJsonObject();
 
   bool _isJsonPrimitive() => isA(.any([p.string, p.num, p.bool]));
 
@@ -195,60 +193,5 @@ extension on DartType {
     if (!isA(p.iterable)) return false;
     final itemType = typeArgumentsOf(p.iterable)!.single;
     return itemType.isSerializableToJson();
-  }
-
-  bool _isJsonObject() {
-    // what do we know? nothing. let jsonEncode figure it out.
-    if (this is DynamicType || isDartCoreObject) return true;
-
-    return on<bool>(
-      dynamic: () => true,
-      interface: (type) {
-        // if it has a toJson method, we're good.
-        final toJson = type.lookUpMethod('toJson', type.element.library);
-        if (toJson != null && !toJson.isStatic) return true;
-        // otherwise, we have no guarantees. assume the worst.
-        return false;
-      },
-      record: (_) => false,
-      typeParameter: (type) {
-        // no bound to know
-        if (type.bound is DynamicType) return false;
-        // if the bound is known to be serializable, we're good.
-        return type.bound.isSerializableToJson();
-      },
-      invalid: () => false,
-      never: () => false,
-      void_: () => false,
-      function: (_) => false,
-    );
-  }
-
-  bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
-
-  T on<T>({
-    required T Function(FunctionType type) function,
-    required T Function(InterfaceType type) interface,
-    required T Function(RecordType type) record,
-    required T Function(TypeParameterType type) typeParameter,
-    required T Function() invalid,
-    required T Function() dynamic,
-    required T Function() never,
-    required T Function() void_,
-  }) {
-    return switch (this) {
-      DynamicType() => dynamic(),
-      VoidType() => void_(),
-      NeverType() => never(),
-      InvalidType() => invalid(),
-      FunctionType type => function(type),
-      InterfaceType type => interface(type),
-      RecordType type => record(type),
-      TypeParameterType type => typeParameter(type),
-      _ => throw InvalidGenerationSourceError(
-        'Unknown type kind `$runtimeType` ($this).',
-        element: element,
-      ),
-    };
   }
 }

@@ -8,7 +8,9 @@ part of 'client.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-
+augment class NoBaseUrl {
+  
+}
 mixin _$NoBaseUrl implements $GeneratedClient {
   @protected
   Future<StreamedResponse> $send(BaseRequest request) {
@@ -19,37 +21,98 @@ mixin _$NoBaseUrl implements $GeneratedClient {
 
   Uri $buildUrl(String path) => baseUrl.resolve(path);
 
-  Future<Response> getResponse() async {
+  @protected
+  Map<String, String> _getResponseHeaders(
+    Fields fields, {
+    SpecialClass? specialHeader,
+  });
+  Future<Response> getResponse(
+    Map<String, String> headers,
+    String? paramHeader,
+    Fields fields, {
+    SpecialClass? specialHeader,
+  }) async {
     Uri $uri = $buildUrl('/response');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request).then(Response.fromStream);
+    $request.headers.addAll(const {
+      'x-class-header': 'class-header-value',
+      'x-method-header': 'method-header-value',
+      'x-header': 'value',
+    });
+    $request.headers.addAll({
+      'x-param-header': ?paramHeader,
+      ...?headers,
+      ..._getResponseHeaders(fields, specialHeader: specialHeader),
+    });
+
+    return await $send($request).then(Response.fromStream);
   }
 
   @protected
   FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body);
   Future<StreamedResponse> updateThing(SpecialClass body) async {
     Uri $uri = $buildUrl('/special');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: await _updateThingEncode(body),
     );
 
-    return $send($request);
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
+    return await $send($request);
   }
 
   @protected
   FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body);
-  Future<StreamedResponse> updateThing2(SpecialClass body) async {
+  @protected
+  FutureOr<SpecialClass> _updateThing2Decode(Response response);
+  Future<SpecialClass> updateThing2(SpecialClass body) async {
     Uri $uri = $buildUrl('/special');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: await _updateThing2Encode(body),
     );
 
-    return $send($request);
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
+    final $response = await $send($request).then(Response.fromStream);
+    return _updateThing2Decode($response);
+  }
+
+  @protected
+  FutureOr<void> _multipartBuildMultipart(
+    MultipartBuilder $builder,
+    io.File fileIo,
+    Object unknown,
+  );
+
+  Future<void> multipart(
+    FilePart file,
+    String name,
+    int? age,
+    http.MultipartFile file2,
+    io.File fileIo,
+    Object unknown,
+  ) async {
+    Uri $uri = $buildUrl('/multipart');
+    final $request = await $createRequest(
+      'POST',
+      $uri,
+      body: await EncodedMultipart.build(($request) async {
+        $request.files['file'] = file;
+        $request.fields['name'] = name;
+        $request.fields['age'] = age?.toString();
+        $request.files['file2'] = .fromMultipartFile(file2);
+        await _multipartBuildMultipart($request, fileIo, unknown);
+      }),
+    );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
+    await $send($request).then(Response.fromStream);
   }
 }
 
@@ -68,82 +131,74 @@ abstract mixin class AClientMixin implements $GeneratedClient {
 
   Future<Response> getResponse() async {
     Uri $uri = $buildUrl('/response');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request).then(Response.fromStream);
+    return await $send($request).then(Response.fromStream);
   }
 
   Future<Data> getThing() async {
     Uri $uri = $buildUrl('/thing');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request)
-        .then(Response.fromStream)
-        .then(
-          (response) =>
-              Data.fromJson(jsonDecode(response.body) as Map<String, dynamic>),
-        );
+    final $response = await $send($request).then(Response.fromStream);
+    return Data.fromJson(jsonDecode($response.body) as Map<String, dynamic>);
   }
 
   Future<String> getRawThing() async {
     Uri $uri = $buildUrl('/raw-thing');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send(
-      $request,
-    ).then(Response.fromStream).then((response) => response.body);
+    final $response = await $send($request).then(Response.fromStream);
+    return $response.body;
   }
 
   Future<Gen<Data>> getGenericThing() async {
     Uri $uri = $buildUrl('/generic-thing');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request)
-        .then(Response.fromStream)
-        .then(
-          (response) => Gen<Data>.fromJson(
-            jsonDecode(response.body) as Map<String, dynamic>,
-            (object) => Data.fromJson(object as Map<String, dynamic>),
-          ),
-        );
+    final $response = await $send($request).then(Response.fromStream);
+    return Gen<Data>.fromJson(
+      jsonDecode($response.body) as Map<String, dynamic>,
+      (object) => Data.fromJson(object as Map<String, dynamic>),
+    );
   }
 
   Future<void> withBody(String body) async {
     Uri $uri = $buildUrl('/body');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(body),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody2(Map<String, dynamic> body) async {
     Uri $uri = $buildUrl('/body2');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(jsonEncode(body)),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody3(Data body) async {
     Uri $uri = $buildUrl('/body3');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(jsonEncode(body.toJson())),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody4(Gen<Data> body) async {
     Uri $uri = $buildUrl('/body4');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(
@@ -151,12 +206,12 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody5(List<Data> body) async {
     Uri $uri = $buildUrl('/body5');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(
@@ -164,75 +219,70 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withBody6(String body) async {
     Uri $uri = $buildUrl('/body6');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(body),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<()> getRecord0() async {
     Uri $uri = $buildUrl('/record0');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request).then(Response.fromStream).then((response) => ());
+    final $response = await $send($request).then(Response.fromStream);
+    return ();
   }
 
   Future<(int, String)> getRecord2() async {
     Uri $uri = $buildUrl('/record2');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request)
-        .then(Response.fromStream)
-        .then(
-          (response) => () {
-            final $map = jsonDecode(response.body) as Map;
-            return ($map[0] as int, $map[1] as String);
-          }(),
-        );
+    final $response = await $send($request).then(Response.fromStream);
+    return () {
+      final $map = jsonDecode($response.body) as Map;
+      return ($map[0] as int, $map[1] as String);
+    }();
   }
 
   Future<({int id, String name})> getRecordNamed() async {
     Uri $uri = $buildUrl('/record_named');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request)
-        .then(Response.fromStream)
-        .then(
-          (response) => () {
-            final $map = jsonDecode(response.body) as Map;
-            return (id: $map['id'] as int, name: $map['name'] as String);
-          }(),
-        );
+    final $response = await $send($request).then(Response.fromStream);
+    return () {
+      final $map = jsonDecode($response.body) as Map;
+      return (id: $map['id'] as int, name: $map['name'] as String);
+    }();
   }
 
   Future<void> withRecordNamedBody(({int id, String name}) body) async {
     Uri $uri = $buildUrl('/record_named_body');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(jsonEncode({'id': body.id, 'name': body.name})),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withRecord2Body((int, String) body) async {
     Uri $uri = $buildUrl('/record2_body');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: BodyEncoded.string(jsonEncode([body.$1, body.$2])),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<Response> getWithQuery(
@@ -243,27 +293,27 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     $uri = $uri.replace(
       queryParameters: {...$uri.queryParametersAll, 'search': search},
     );
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request).then(Response.fromStream);
+    return await $send($request).then(Response.fromStream);
   }
 
   Future<Response> getWithPath(String id, String detailId) async {
     Uri $uri = $buildUrl('/path/${id}/detail/${detailId}');
-    final $request = await createRequest2('GET', $uri);
+    final $request = await $createRequest('GET', $uri);
 
-    return $send($request).then(Response.fromStream);
+    return await $send($request).then(Response.fromStream);
   }
 
   Future<void> cancelable(Future<void> abortTrigger) async {
     Uri $uri = $buildUrl('/cancelable');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'GET',
       $uri,
       abortTrigger: abortTrigger,
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<List<Map<String, Gen<Data>>>> everything(
@@ -278,7 +328,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       queryParameters: {...$uri.queryParametersAll, 'search': search},
       fragment: fragment,
     );
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       abortTrigger: abortTrigger,
@@ -291,56 +341,53 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    return $send($request)
-        .then(Response.fromStream)
-        .then(
-          (response) => (jsonDecode(response.body) as List)
-              .map(
-                (e) => (e as Map).map(
-                  (k, v) => MapEntry(
-                    k as String,
-                    Gen<Data>.fromJson(
-                      v as Map<String, dynamic>,
-                      (object) => Data.fromJson(object as Map<String, dynamic>),
-                    ),
-                  ),
-                ),
-              )
-              .toList(),
-        );
+    final $response = await $send($request).then(Response.fromStream);
+    return (jsonDecode($response.body) as List)
+        .map(
+          (e) => (e as Map).map(
+            (k, v) => MapEntry(
+              k as String,
+              Gen<Data>.fromJson(
+                v as Map<String, dynamic>,
+                (object) => Data.fromJson(object as Map<String, dynamic>),
+              ),
+            ),
+          ),
+        )
+        .toList();
   }
 
   Future<void> withFields(Map<String, String> fields) async {
     Uri $uri = $buildUrl('/fields');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: EncodedFields.from({...fields}),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields2(Fields fields) async {
     Uri $uri = $buildUrl('/fields/object');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: EncodedFields.from({...fields.toJson()}),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields3(GenFields<Stringy> fields) async {
     Uri $uri = $buildUrl('/fields/generic');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...fields.toJson((object) => object.toJson())}),
+      body: EncodedFields.from({...fields.toJson((object) => object)}),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<void> withFields4(
@@ -353,7 +400,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Map<String, String> rest,
   ) async {
     Uri $uri = $buildUrl('/fields');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'POST',
       $uri,
       body: EncodedFields.from({
@@ -367,39 +414,39 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       }),
     );
 
-    return $send($request).then(Response.fromStream);
+    await $send($request).then(Response.fromStream);
   }
 
   Future<StreamedResponse> streamed(Stream<List<int>> body) async {
     Uri $uri = $buildUrl('/stream');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'PUT',
       $uri,
       body: BodyEncoded.stream(body),
     );
 
-    return $send($request);
+    return await $send($request);
   }
 
   Future<StreamedResponse> streamed2(Stream<Uint8List> body) async {
     Uri $uri = $buildUrl('/stream');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'PUT',
       $uri,
       body: BodyEncoded.stream(body),
     );
 
-    return $send($request);
+    return await $send($request);
   }
 
   Future<StreamedResponse> streamed3(http.ByteStream body) async {
     Uri $uri = $buildUrl('/stream');
-    final $request = await createRequest2(
+    final $request = await $createRequest(
       'PUT',
       $uri,
       body: BodyEncoded.stream(body),
     );
 
-    return $send($request);
+    return await $send($request);
   }
 }

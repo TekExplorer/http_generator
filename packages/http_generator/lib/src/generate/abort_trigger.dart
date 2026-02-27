@@ -9,7 +9,8 @@ String? abortTrigger(MethodElement method) {
     final type = cancel.element.type;
     final name = cancel.element.name!;
     if (Checker.cancelToken.isAssignableFromType(type)) {
-      futures.add('$name.whenCancel');
+      final question = type.nullabilitySuffix == .question ? '?' : '';
+      futures.add('$name.${question}whenCancel');
     } else if (Checker.future.isAssignableFromType(type)) {
       futures.add(name);
     } else {
@@ -21,5 +22,5 @@ String? abortTrigger(MethodElement method) {
   }
 
   if (futures.length == 1) return futures.single;
-  return '#{{dart:async|Future}}.any([${futures.join(', ')}].whereType<Future<void>>())';
+  return '#{{dart:async|Future}}.any([${futures.join(', ')}].whereType<#{{dart:async|Future}}<void>>())';
 }

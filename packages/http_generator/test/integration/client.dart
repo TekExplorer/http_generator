@@ -1,27 +1,46 @@
 import 'dart:core';
+import 'dart:io' as io;
 import 'dart:typed_data';
 
-import 'package:http/http.dart' as http show Client, ByteStream;
+import 'package:http/http.dart' as http;
 import 'package:http_annotation/http_annotation.dart';
 
 part 'client.g.dart';
 
 class SpecialClass {}
 
+@Headers({'x-class-header': 'class-header-value'})
 @RestClient()
 class NoBaseUrl with _$NoBaseUrl {
   NoBaseUrl({required this.baseUrl});
 
   @override
   final Uri baseUrl;
+  @override
+  Map<String, String> _getResponseHeaders(
+    Fields fields, {
+    SpecialClass? specialHeader,
+  }) {
+    return {
+      ...fields.toJson().cast<String, String>(),
+      if (specialHeader != null)
+        'special-header': 'special-${specialHeader.hashCode}',
+    };
+  }
 
   @override
-  @Method('GET', '/response')
-  Future<Response> getResponse();
+  @Method('GET', '/response', headers: {'x-header': 'value'})
+  @Headers({'x-method-header': 'method-header-value'})
+  Future<Response> getResponse(
+    @Headers() Map<String, String> headers,
+    @Header('x-param-header') String? paramHeader,
+    @Headers() Fields fields, {
+    @Header() SpecialClass? specialHeader,
+  });
 
   @override
-  FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body) {
-    return Encoded.string('custom-encoded-${body.hashCode}');
+  BodyEncoded _updateThingEncode(SpecialClass body) {
+    return .string('custom-encoded-${body.hashCode}');
   }
 
   @override
@@ -29,13 +48,81 @@ class NoBaseUrl with _$NoBaseUrl {
   Future<StreamedResponse> updateThing(@Body() SpecialClass body);
 
   @override
-  FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body) {
+  BodyEncoded _updateThing2Encode(SpecialClass body) {
     return .fields({'custom': 'custom-encoded-${body.hashCode}'});
   }
 
   @override
+  SpecialClass _updateThing2Decode(Response response) {
+    return SpecialClass();
+  }
+
+  @override
   @Post('/special')
-  Future<StreamedResponse> updateThing2(@Body(custom: true) SpecialClass body);
+  Future<SpecialClass> updateThing2(@Body(custom: true) SpecialClass body);
+
+  @override
+  FutureOr<void> _multipartBuildMultipart(
+    MultipartBuilder $builder,
+    io.File fileIo,
+    Object unknown,
+  ) async {
+    $builder.files['file_io'] = .fromBytes(
+      await fileIo.readAsBytes(),
+      filename: fileIo.path.split('/').last,
+    );
+  }
+
+  @override
+  @Post('/multipart', multipart: true)
+  Future<void> multipart(
+    @Field('file') FilePart file,
+    @Field('name') String name,
+    @Field('age') int? age,
+    // TODO: clearly we want an @custom
+    @Field(null) http.MultipartFile file2,
+    @Field(null) io.File fileIo,
+    @Field(null, custom: true) Object unknown,
+  );
+
+  // final _getResponse = (
+  //   request: (
+  //     headers: (Fields fields, {SpecialClass? specialHeader}) {
+  //       return {
+  //         ...fields.toJson().cast<String, String>(),
+  //         if (specialHeader != null)
+  //           'special-header': 'special-${specialHeader.hashCode}',
+  //       };
+  //     },
+  //     intercept: (http.AbortableRequest request) {
+  //       // do something with response
+  //     },
+  //     encode: (SpecialClass body) {
+  //       return .fields({'value': 'encoded-${body.hashCode}'});
+  //     },
+  //   ),
+  //   response: (
+  //     intercept: (http.Response response) {
+  //       // do something with response
+  //     },
+  //   ),
+  // );
+
+  // @override
+  // get $coding => (
+  //   decodeSpecialClass: (response) => SpecialClass(),
+  //   encodeSpecialClass: (body) => .string('custom-encoded-${body.hashCode}'),
+  // );
+
+  // @override
+  // final $coding = .new(
+  //   encodeSpecialClass: (body) {
+  //     return .fields({'value': 'encoded-${body.hashCode}'});
+  //   },
+  //   decodeSpecialClass: (response) {
+  //     return SpecialClass();
+  //   },
+  // );
 }
 
 @RestClient(

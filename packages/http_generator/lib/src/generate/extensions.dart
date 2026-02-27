@@ -1,6 +1,6 @@
 part of '../generator.dart';
 
-extension on List<FormalParameterElement> {
+extension on Iterable<FormalParameterElement> {
   String toCode([Formal? formal]) {
     final required = where(
       (p) => p.isRequiredPositional,
@@ -22,9 +22,26 @@ extension on List<FormalParameterElement> {
     }
     return buffer.toString();
   }
+
+  String toCallCode() {
+    final positional = where(
+      (p) => p.isPositional,
+    ).map((p) => p.name).join(', ');
+    final named = where(
+      (p) => p.isNamed,
+    ).map((p) => '${p.name}: ${p.name}').join(', ');
+
+    final buffer = StringBuffer();
+    buffer.write(positional);
+    if (named.isNotEmpty) {
+      if (positional.isNotEmpty) buffer.write(', ');
+      buffer.write(named);
+    }
+    return buffer.toString();
+  }
 }
 
-enum Formal { superFormal, initializingFormal, none }
+enum Formal { superFormal, initializingFormal, existing, none }
 
 extension on FormalParameterElement {
   String toCode([Formal? formal]) {
@@ -32,6 +49,21 @@ extension on FormalParameterElement {
     if (isRequiredNamed) buffer.write('required ');
     if (isCovariant) buffer.write('covariant ');
     buffer.write('${type.toCode()} ');
+
+    // switch (formal) {
+    //     case Formal.superFormal when isSuperFormal:
+    //     case Formal.initializingFormal when isInitializingFormal:
+    //       break;
+    //     case Formal.existing when !isSuperFormal && !isInitializingFormal:
+    //       break;
+    //     case null, Formal.none:
+    //       break;
+    //     default:
+    //       throw InvalidGenerationSourceError(
+    //         'Formal parameter `${name}` does not match the expected formal type `$formal`.',
+    //         element: this,
+    //       );
+    //   }
 
     if (formal == Formal.superFormal || (formal == null && isSuperFormal)) {
       buffer.write('super.');
@@ -65,6 +97,9 @@ extension type MethodAnnotation(ConstantReader reader)
   //     ),
   //   );
   // }
+
+  Map<DartObject?, DartObject?>? get headers =>
+      read('headers').nullOr?.objectValue.toMapValue();
 
   /// returns like `const {'content': 'value'}`
   String? get headersCode =>
@@ -102,3 +137,13 @@ extension type BodyAnnotation(ConstantReader reader) implements ConstantReader {
 }
 
 enum RequestType { fields, multipart, body, none }
+
+extension NonNullMap<V extends Object, K extends Object> on Map<K?, V?> {
+  Map<K, V> get nonNulls => {
+    for (final entry in entries) ?entry.key: ?entry.value,
+  };
+}
+
+extension DartTypeIsA on DartType {
+  bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
+}

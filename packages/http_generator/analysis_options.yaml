@@ -19,7 +19,16 @@ linter:
   rules:
     - unnecessary_parenthesis
 
-# analyzer:
+analyzer:
+  enable-experiment:
+    - augmentations
+    - anonymous-methods
+    - enhanced-parts
+    - const-functions
+    - macros
+    - primary-constructors
+    - private-named-parameters
+    - static-extensions
 #   exclude:
 #     - path/to/excluded/files/**
 

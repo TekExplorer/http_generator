@@ -77,7 +77,7 @@ final class Fields {
 final class Field {
   const Field(this.name, {this.custom = false});
 
-  final String name;
+  final String? name;
   final bool custom;
 }
 
@@ -104,6 +104,29 @@ const fragment = Fragment();
 @Target({TargetKind.parameter})
 final class Fragment {
   const Fragment();
+}
+
+const multipart = _Multipart();
+
+@Target({TargetKind.method})
+final class _Multipart {
+  const _Multipart();
+}
+
+// final json = Headers({'Content-Type': 'application/json'});
+// final text = Headers({'Content-Type': 'text/plain'});
+
+/// Additional headers for a request.
+@Target({TargetKind.method, TargetKind.classType, TargetKind.parameter})
+final class Headers {
+  const Headers([this.headers = const {}]);
+  final Map<String, String> headers;
+}
+
+@Target({TargetKind.parameter})
+final class Header {
+  const Header([this.key]);
+  final String? key;
 }
 
 /// Used to cancel an ongoing request.
