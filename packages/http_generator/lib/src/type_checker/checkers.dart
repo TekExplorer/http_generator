@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/element.dart' hide Fragment;
 import 'package:analyzer/dart/element/type.dart';
+import 'package:http_generator/src/generator.dart';
 import 'package:source_gen/source_gen.dart' show ConstantReader, TypeChecker;
 import 'package:source_helper/source_helper.dart';
 
@@ -74,10 +75,24 @@ extension Checker on TypeChecker {
     final mapArgs = type.typeArgumentsOf(map);
     if (mapArgs == null) return false;
     final [key, value] = mapArgs;
-    return key.isDartCoreString && value.isDartCoreString;
+    return key.isA(string) && value.isA(string);
   }
 
   static final protoGeneratedMessage = from('protobuf#GeneratedMessage');
+}
+
+extension TypeHelpers on DartType {
+  bool get implementsMapStringString => isA(.map, [.string, .string]);
+
+  bool get implementsStreamListInt {
+    return isA2(
+      .new(.stream, [
+        .fromUrl('dart:core#List', [.fromUrl('dart:core#int')]),
+      ]),
+    );
+  }
+
+  bool get implementsListInt => Checker.implementsListInt(this);
 }
 
 extension AnnotatedOf on TypeChecker {

@@ -145,5 +145,70 @@ extension NonNullMap<V extends Object, K extends Object> on Map<K?, V?> {
 }
 
 extension DartTypeIsA on DartType {
-  bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
+  // bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
+  bool isA(
+    TypeChecker typeChecker, [
+    Iterable<TypeChecker?>? typeArgumentCheckers,
+  ]) => isA2(
+    TypeRef(
+      typeChecker,
+      typeArgumentCheckers?.map((c) => c == null ? null : TypeRef(c)).toList(),
+    ),
+  );
+
+  bool isA2(TypeRef typeRef) {
+    if (!typeRef.checker.isAssignableFromType(this)) return false;
+    final typeArgumentsCheckers = typeRef.typeArguments;
+    if (typeArgumentsCheckers == null) return true;
+
+    final typeArguments = typeArgumentsOf(typeRef.checker);
+    if (typeArguments == null) return true;
+
+    if (typeArgumentsCheckers.length > typeArguments.length) return false;
+
+    for (var i = 0; i < typeArgumentsCheckers.length; i++) {
+      final arg = typeArguments.elementAt(i);
+      final checker = typeArgumentsCheckers.elementAt(i);
+      if (checker == null) continue;
+      if (!arg.isA2(checker)) return false;
+    }
+
+    return true;
+  }
 }
+
+class TypeRef {
+  TypeRef(this.checker, [this.typeArguments]);
+  factory TypeRef.fromUrl(String url, [List<TypeRef?>? typeArguments]) {
+    return TypeRef(Checker.from(url), typeArguments);
+  }
+
+  final TypeChecker checker;
+  final List<TypeRef?>? typeArguments;
+}
+
+extension TypeCheckerRef on TypeChecker {
+  TypeRef get asRef => TypeRef(this);
+  TypeRef withTypeArguments(List<TypeRef?> typeArguments) =>
+      TypeRef(this, typeArguments);
+}
+
+// abstract class TypeHelper {
+//   bool isExactly(DartType type);
+// }
+
+// class _TypeCheckerHelper implements TypeHelper {
+//   _TypeCheckerHelper(this.checker);
+//   final TypeChecker checker;
+
+//   @override
+//   bool isExactly(DartType type) => checker.isExactlyType(type);
+// }
+
+// class _ExactTypeCheckerHelper implements TypeHelper {
+//   _ExactTypeCheckerHelper(this.type);
+//   final DartType type;
+
+//   @override
+//   bool isExactly(DartType other) => other == type;
+// }
