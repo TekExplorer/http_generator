@@ -8,12 +8,10 @@ part of 'client.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-augment class NoBaseUrl {
-  
-}
+
 mixin _$NoBaseUrl implements $GeneratedClient {
   @protected
-  Future<StreamedResponse> $send(BaseRequest request) {
+  Future<http.StreamedResponse> $send(http.BaseRequest request) {
     return request.send();
   }
 
@@ -26,7 +24,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
     Fields fields, {
     SpecialClass? specialHeader,
   });
-  Future<Response> getResponse(
+  Future<http.Response> getResponse(
     Map<String, String> headers,
     String? paramHeader,
     Fields fields, {
@@ -46,12 +44,12 @@ mixin _$NoBaseUrl implements $GeneratedClient {
       ..._getResponseHeaders(fields, specialHeader: specialHeader),
     });
 
-    return await $send($request).then(Response.fromStream);
+    return await $send($request).then(http.Response.fromStream);
   }
 
   @protected
   FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body);
-  Future<StreamedResponse> updateThing(SpecialClass body) async {
+  Future<http.StreamedResponse> updateThing(SpecialClass body) async {
     Uri $uri = $buildUrl('/special');
     final $request = await $createRequest(
       'POST',
@@ -67,7 +65,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
   @protected
   FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body);
   @protected
-  FutureOr<SpecialClass> _updateThing2Decode(Response response);
+  FutureOr<SpecialClass> _updateThing2Decode(http.Response response);
   Future<SpecialClass> updateThing2(SpecialClass body) async {
     Uri $uri = $buildUrl('/special');
     final $request = await $createRequest(
@@ -78,7 +76,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return _updateThing2Decode($response);
   }
 
@@ -112,7 +110,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 }
 
@@ -121,7 +119,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
 
 abstract mixin class AClientMixin implements $GeneratedClient {
   @protected
-  Future<StreamedResponse> $send(BaseRequest request) {
+  Future<http.StreamedResponse> $send(http.BaseRequest request) {
     return request.send();
   }
 
@@ -129,18 +127,18 @@ abstract mixin class AClientMixin implements $GeneratedClient {
 
   Uri $buildUrl(String path) => baseUrl.resolve(path);
 
-  Future<Response> getResponse() async {
+  Future<http.Response> getResponse() async {
     Uri $uri = $buildUrl('/response');
     final $request = await $createRequest('GET', $uri);
 
-    return await $send($request).then(Response.fromStream);
+    return await $send($request).then(http.Response.fromStream);
   }
 
   Future<Data> getThing() async {
     Uri $uri = $buildUrl('/thing');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return Data.fromJson(jsonDecode($response.body) as Map<String, dynamic>);
   }
 
@@ -148,7 +146,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Uri $uri = $buildUrl('/raw-thing');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return $response.body;
   }
 
@@ -156,7 +154,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Uri $uri = $buildUrl('/generic-thing');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return Gen<Data>.fromJson(
       jsonDecode($response.body) as Map<String, dynamic>,
       (object) => Data.fromJson(object as Map<String, dynamic>),
@@ -171,7 +169,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(body),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withBody2(Map<String, dynamic> body) async {
@@ -182,7 +180,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode(body)),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withBody3(Data body) async {
@@ -193,7 +191,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode(body.toJson())),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withBody4(Gen<Data> body) async {
@@ -206,7 +204,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withBody5(List<Data> body) async {
@@ -219,7 +217,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withBody6(String body) async {
@@ -230,14 +228,14 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(body),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<()> getRecord0() async {
     Uri $uri = $buildUrl('/record0');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return ();
   }
 
@@ -245,7 +243,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Uri $uri = $buildUrl('/record2');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return () {
       final $map = jsonDecode($response.body) as Map;
       return ($map[0] as int, $map[1] as String);
@@ -256,7 +254,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Uri $uri = $buildUrl('/record_named');
     final $request = await $createRequest('GET', $uri);
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return () {
       final $map = jsonDecode($response.body) as Map;
       return (id: $map['id'] as int, name: $map['name'] as String);
@@ -271,7 +269,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode({'id': body.id, 'name': body.name})),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withRecord2Body((int, String) body) async {
@@ -282,10 +280,10 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode([body.$1, body.$2])),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
-  Future<Response> getWithQuery(
+  Future<http.Response> getWithQuery(
     String search,
     Map<String, dynamic> filters,
   ) async {
@@ -295,14 +293,14 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     );
     final $request = await $createRequest('GET', $uri);
 
-    return await $send($request).then(Response.fromStream);
+    return await $send($request).then(http.Response.fromStream);
   }
 
-  Future<Response> getWithPath(String id, String detailId) async {
+  Future<http.Response> getWithPath(String id, String detailId) async {
     Uri $uri = $buildUrl('/path/${id}/detail/${detailId}');
     final $request = await $createRequest('GET', $uri);
 
-    return await $send($request).then(Response.fromStream);
+    return await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> cancelable(Future<void> abortTrigger) async {
@@ -313,7 +311,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       abortTrigger: abortTrigger,
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<List<Map<String, Gen<Data>>>> everything(
@@ -341,7 +339,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
-    final $response = await $send($request).then(Response.fromStream);
+    final $response = await $send($request).then(http.Response.fromStream);
     return (jsonDecode($response.body) as List)
         .map(
           (e) => (e as Map).map(
@@ -365,7 +363,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({...fields}),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withFields2(Fields fields) async {
@@ -376,7 +374,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({...fields.toJson()}),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withFields3(GenFields<Stringy> fields) async {
@@ -387,7 +385,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({...fields.toJson((object) => object)}),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
   Future<void> withFields4(
@@ -414,10 +412,10 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       }),
     );
 
-    await $send($request).then(Response.fromStream);
+    await $send($request).then(http.Response.fromStream);
   }
 
-  Future<StreamedResponse> streamed(Stream<List<int>> body) async {
+  Future<http.StreamedResponse> streamed(Stream<List<int>> body) async {
     Uri $uri = $buildUrl('/stream');
     final $request = await $createRequest(
       'PUT',
@@ -428,7 +426,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     return await $send($request);
   }
 
-  Future<StreamedResponse> streamed2(Stream<Uint8List> body) async {
+  Future<http.StreamedResponse> streamed2(Stream<Uint8List> body) async {
     Uri $uri = $buildUrl('/stream');
     final $request = await $createRequest(
       'PUT',
@@ -439,7 +437,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     return await $send($request);
   }
 
-  Future<StreamedResponse> streamed3(http.ByteStream body) async {
+  Future<http.StreamedResponse> streamed3(http.ByteStream body) async {
     Uri $uri = $buildUrl('/stream');
     final $request = await $createRequest(
       'PUT',

@@ -82,11 +82,12 @@ extension Checker on TypeChecker {
 }
 
 extension TypeHelpers on DartType {
-  bool get implementsMapStringString => isA(.map, [.string, .string]);
+  bool get implementsMapStringString =>
+      isA(Checker.map, [Checker.string, Checker.string]);
 
   bool get implementsStreamListInt {
     return isA2(
-      .new(.stream, [
+      .new(Checker.stream, [
         .fromUrl('dart:core#List', [.fromUrl('dart:core#int')]),
       ]),
     );
