@@ -123,6 +123,12 @@ class JsonDecoderVisitor
     TypeParameterType type,
     ConverterContext argument,
   ) {
+    final fromJsonT = argument.getFactory(type, 'fromJson');
+    if (fromJsonT != null) {
+      final nullable = type.nullabilitySuffix == .question;
+      if (!nullable) return '${fromJsonT.name}(${argument.varName})';
+      return '${argument.varName}?.call${fromJsonT.name}(${argument.varName}!)';
+    }
     throw InvalidGenerationSourceError(
       'Generic type parameter `${type.element.name}` must provide a factory for deserialization.',
       element: type.element,

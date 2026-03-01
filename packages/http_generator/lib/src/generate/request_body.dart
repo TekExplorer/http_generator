@@ -131,7 +131,7 @@ class RequestBody {
         try {
           final bodyEncodable = Coding.bodyEncodable(
             type,
-            ConverterContext(name, method.library),
+            ConverterContext(name, method.library, method.formalParameters),
             Checker.jsonConverter.firstAnnotationOf(param.element),
           );
           return '$encoded.string(#{{dart:convert|jsonEncode}}($bodyEncodable))';

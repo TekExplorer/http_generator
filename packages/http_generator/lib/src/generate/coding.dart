@@ -1,12 +1,9 @@
 part of '../generator.dart';
 
 class Coding {
-  static String decodeResponse(
-    String response,
-    DartType type,
-    LibraryElement library, [
-    DartObject? jsonConverter,
-  ]) {
+  static String decodeResponse(String response, MethodElement method) {
+    final library = method.library;
+    final type = method.returnType.typeArgumentsOf(Checker.future)!.single;
     if (type is VoidType) return '';
     if (type is DynamicType) return response;
 
@@ -15,13 +12,14 @@ class Coding {
 
     final json = '#{{dart:convert|jsonDecode}}($response.body)';
 
+    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(method);
     if (jsonConverter != null) {
       return '${jsonConverter.toCode()}.fromJson($json)';
     }
 
     return type.acceptWithArgument(
       JsonDecoderVisitor(),
-      ConverterContext(json, library),
+      ConverterContext(json, library, method.formalParameters),
     );
   }
 
@@ -47,7 +45,11 @@ class Coding {
 
     return type.acceptWithArgument(
       JsonEncoderVisitor(),
-      ConverterContext(element.name!, element.library!),
+      ConverterContext(
+        element.name!,
+        element.library!,
+        (element.enclosingElement as FunctionTypedElement).formalParameters,
+      ),
     );
   }
 
@@ -80,20 +82,26 @@ class Coding {
       return '${jsonConverter.toCode()}.toJson(${element.name!})';
     }
 
-    return encodeTypeToString(type, element.name!, element.library!);
+    return encodeTypeToString(
+      type,
+      element.name!,
+      element.library!,
+      (element.enclosingElement as FunctionTypedElement).formalParameters,
+    );
   }
 
   static String encodeTypeToString(
     DartType type,
     String varName,
     LibraryElement library,
+    Iterable<VariableElement> otherFields,
   ) {
     if (type.isA(Checker.string)) return varName;
 
     try {
       return type.acceptWithArgument(
         JsonEncoderVisitor(),
-        ConverterContext(varName, library),
+        ConverterContext(varName, library, otherFields),
       );
     } on InvalidGenerationSourceError {
       final q = type.nullabilitySuffix == .question ? '?' : '';

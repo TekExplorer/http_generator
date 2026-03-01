@@ -17,7 +17,7 @@ class GenerateForMethod {
     if (methodAnnotation == null) return null;
 
     final returnType = method.returnType;
-    if (!returnType.isDartAsyncFuture) {
+    if (!returnType.isA(Checker.future)) {
       throw InvalidGenerationSourceError(
         'Return type of `${method.name}` must be a Future.',
         element: method,
@@ -28,14 +28,15 @@ class GenerateForMethod {
     final httpMethod = methodReader.method;
     final path = methodReader.path;
 
-    final futureType = (returnType as InterfaceType).typeArguments.first;
+    final futureType = returnType.typeArgumentsOf(Checker.future)!.single;
 
     if (futureType is! InterfaceType &&
         futureType is! RecordType &&
         futureType is! DynamicType &&
-        futureType is! VoidType) {
+        futureType is! VoidType &&
+        futureType is! TypeParameterType) {
       throw InvalidGenerationSourceError(
-        'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>',
+        'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>. Found Future<$futureType>',
         element: method,
       );
     }
@@ -49,7 +50,7 @@ class GenerateForMethod {
       );
     }
     final fragment = fragments.firstOrNull;
-    final query = createQuery(r'$uri', method.formalParameters);
+    final query = createQuery(r'$uri', method);
 
     final body = RequestBody(method, methodReader, addMember);
 
@@ -104,7 +105,7 @@ class GenerateForMethod {
       yield r'final $response = await $send($request).then(#{{http|Response}}.fromStream);';
 
       try {
-        yield 'return ${Coding.decodeResponse(r'$response', futureType, method.library)};';
+        yield 'return ${Coding.decodeResponse(r'$response', method)};';
       } catch (e) {
         final decodeMethodName = '_${method.name}Decode';
         addMember('@#{{meta|protected}} #{{dart:async|FutureOr}}<${futureType.toCode()}> $decodeMethodName(#{{http|Response}} response);');

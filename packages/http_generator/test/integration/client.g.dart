@@ -112,6 +112,24 @@ mixin _$NoBaseUrl implements $GeneratedClient {
 
     await $send($request).then(http.Response.fromStream);
   }
+
+  Future<R> weird<T, R>(
+    T body,
+    Object? Function(T value) toJsonT,
+    R Function(Object? json) fromJsonR,
+  ) async {
+    Uri $uri = $buildUrl('/weird');
+    final $request = await $createRequest(
+      'POST',
+      $uri,
+      body: BodyEncoded.string(jsonEncode(toJsonT(body))),
+    );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
+    final $response = await $send($request).then(http.Response.fromStream);
+    return fromJsonR(jsonDecode($response.body));
+  }
 }
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
@@ -212,9 +230,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: BodyEncoded.string(
-        jsonEncode(body.map((e) => e.toJson()).toList()),
-      ),
+      body: BodyEncoded.string(jsonEncode(body.map((e) => e.toJson()))),
     );
 
     await $send($request).then(http.Response.fromStream);
@@ -404,7 +420,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({
         'f1': ?field1,
         'f2': ?field2,
-        'f3': ?field3?.toString(),
+        'f3': ?field3,
         'f4': ?field4,
         'f5': ?field5?.toJson(),
         ...?grouped?.toJson(),

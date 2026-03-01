@@ -1,11 +1,10 @@
-import 'package:analyzer/dart/element/nullability_suffix.dart'
-    show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
 import '../generator.dart';
+import '../type_checker/checkers.dart';
 import 'coder_shared.dart';
 
 class JsonEncoderVisitor
@@ -21,15 +20,15 @@ class JsonEncoderVisitor
     // if (factory != null) return '$factory($varName)';
     if (type.isSerializableToJson()) return varName;
 
-    if (type.isDartCoreList) {
-      final listType = type.typeArguments.first;
+    if (type.isA(Checker.iterable)) {
+      final listType = type.typeArgumentsOf(Checker.iterable)!.single;
       // shortcut so we dont have unnecessary nesting
       if (listType is DynamicType) return varName;
       if (listType.isSerializableToJson()) return varName;
-      return '$varName.map((e) => ${nest(listType, 'e', argument)}).toList()';
+      return '$varName.map((e) => ${nest(listType, 'e', argument)})';
     }
-    if (type.isDartCoreMap) {
-      final [keyType, valueType] = type.typeArguments;
+    if (type.isA(Checker.map)) {
+      final [keyType, valueType] = type.typeArgumentsOf(Checker.map)!;
       // if (!keyType.isDartCoreString) {
       //   throw InvalidGenerationSourceError('Only Map<String, V> is supported.');
       // }
@@ -57,7 +56,7 @@ class JsonEncoderVisitor
 
     if (type.typeArguments.isNotEmpty && toJson.formalParameters.isNotEmpty) {
       final genericParams = toJson.formalParameters.toList();
-      for (final (i, param) in genericParams.indexed) {
+      for (final param in genericParams) {
         final factoryType = param.type;
         if (factoryType is! FunctionType) {
           throw InvalidGenerationSourceError(
@@ -65,12 +64,21 @@ class JsonEncoderVisitor
             element: param,
           );
         }
+
+        final obj = factoryType.formalParameters.singleOrNull;
+        if (obj == null) {
+          throw InvalidGenerationSourceError(
+            'Generic argument factories must have exactly one parameter.',
+            element: param,
+          );
+        }
+
         genericArgumentFactories.add(
-          '(object) => ${nest(type.typeArguments[i], 'object', argument)}',
+          '(object) => ${nest(obj.type, 'object', argument)}',
         );
       }
     }
-    final q = type.nullabilitySuffix == NullabilitySuffix.question ? '?' : '';
+    final q = type.nullabilitySuffix == .question ? '?' : '';
     return '$varName$q.${toJson.name}(${genericArgumentFactories.join(', ')})';
   }
 
@@ -133,8 +141,14 @@ class JsonEncoderVisitor
     TypeParameterType type,
     ConverterContext argument,
   ) {
+    final toJsonT = argument.getFactory(type, 'toJson');
+    if (toJsonT != null) {
+      final nullable = type.nullabilitySuffix == .question;
+      if (!nullable) return '${toJsonT.name}(${argument.varName})';
+      return '${argument.varName}?.call${toJsonT.name}(${argument.varName}!)';
+    }
     throw InvalidGenerationSourceError(
-      'Generic type parameter `${type.element.name}` must provide a factory for deserialization.',
+      'Generic type parameter `${type.getDisplayString()}` must provide a factory for deserialization.',
       element: type.element,
     );
   }

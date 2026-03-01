@@ -85,6 +85,14 @@ class NoBaseUrl with _$NoBaseUrl {
     @Field() @custom Object unknown,
   );
 
+  @override
+  @Post('/weird')
+  Future<R> weird<T, R>(
+    @Body.json() T body,
+    Object? Function(T value) toJsonT,
+    R Function(Object? json) fromJsonR,
+  );
+
   // final _getResponse = (
   //   request: (
   //     headers: (Fields fields, {SpecialClass? specialHeader}) {

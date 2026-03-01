@@ -6,10 +6,9 @@ part of '../generator.dart';
 //   return queryParameters.isNotEmpty || queryAllParameters.isNotEmpty;
 // }
 
-MapLiteral? createQuery(
-  String uri,
-  List<FormalParameterElement> formalParameters,
-) {
+MapLiteral? createQuery(String uri, FunctionTypedElement function) {
+  List<FormalParameterElement> formalParameters = function.formalParameters;
+
   final queryParameters = Checker.query.annotatedOf(formalParameters);
   final queryAllParameters = Checker.queryAll.annotatedOf(formalParameters);
 
@@ -67,6 +66,7 @@ MapLiteral? createQuery(
         elementType,
         'e',
         param.element.library!,
+        function.formalParameters,
       );
       mapLiteral.add(queryKey, '$paramName?.map((e) => $encode)');
     } else {
