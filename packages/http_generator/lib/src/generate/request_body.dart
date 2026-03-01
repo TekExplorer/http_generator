@@ -131,22 +131,7 @@ class RequestBody {
         try {
           final bodyEncodable = Coding.bodyEncodable(
             type,
-            ConverterContext(name, {
-              for (final tp in method.typeParameters)
-                tp: (context) {
-                  // myFunc<@TConverter() T>()
-                  final converterAnnotation = Checker.jsonConverter
-                      .firstAnnotationOfExact(tp);
-                  if (converterAnnotation != null) {
-                    return '#{{dart:convert|jsonEncode}}(${converterAnnotation.toCode()}.toJson(${context.varName}))';
-                  }
-                  throw InvalidGenerationSourceError(
-                    'Generic type parameter `${tp.name}` must have a factory for serialization. '
-                    'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-                    element: tp,
-                  );
-                },
-            }, method.library),
+            ConverterContext(name, method.library),
             Checker.jsonConverter.firstAnnotationOf(param.element),
           );
           return '$encoded.string(#{{dart:convert|jsonEncode}}($bodyEncodable))';

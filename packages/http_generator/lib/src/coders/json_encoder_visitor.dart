@@ -133,9 +133,6 @@ class JsonEncoderVisitor
     TypeParameterType type,
     ConverterContext argument,
   ) {
-    final factory = argument.factories[type.element];
-    if (factory != null) return factory(argument);
-
     throw InvalidGenerationSourceError(
       'Generic type parameter `${type.element.name}` must provide a factory for deserialization.',
       element: type.element,

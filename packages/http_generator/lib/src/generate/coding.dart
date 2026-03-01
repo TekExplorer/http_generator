@@ -4,8 +4,7 @@ class Coding {
   static String decodeResponse(
     String response,
     DartType type,
-    LibraryElement library,
-    GenericFactories factories, [
+    LibraryElement library, [
     DartObject? jsonConverter,
   ]) {
     if (type is VoidType) return '';
@@ -22,7 +21,7 @@ class Coding {
 
     return type.acceptWithArgument(
       JsonDecoderVisitor(),
-      ConverterContext(json, factories, library),
+      ConverterContext(json, library),
     );
   }
 
@@ -48,7 +47,7 @@ class Coding {
 
     return type.acceptWithArgument(
       JsonEncoderVisitor(),
-      ConverterContext(element.name!, {}, element.library!),
+      ConverterContext(element.name!, element.library!),
     );
   }
 
@@ -94,7 +93,7 @@ class Coding {
     try {
       return type.acceptWithArgument(
         JsonEncoderVisitor(),
-        ConverterContext(varName, {}, library),
+        ConverterContext(varName, library),
       );
     } on InvalidGenerationSourceError {
       final q = type.nullabilitySuffix == .question ? '?' : '';
@@ -217,26 +216,6 @@ class MapStringStringEncoderVisitor
 
   @override
   visitVoidType(VoidType type, element) => _throw(type, element);
-}
-
-Map<TypeParameterElement, String Function(ConverterContext)> decodingFactories(
-  MethodElement method,
-) {
-  return <TypeParameterElement, String Function(ConverterContext)>{
-    for (final tp in method.typeParameters)
-      tp: (context) {
-        // myFunc<@TConverter() T>()
-        final converterAnnotation = Checker.jsonConverter.firstAnnotationOf(tp);
-        if (converterAnnotation != null) {
-          return '${converterAnnotation.toCode()}.fromJson(${context.varName})';
-        }
-        throw InvalidGenerationSourceError(
-          'Generic type parameter `${tp.name}` must have a factory for deserialization. '
-          'Either provide a `@JsonConverter` annotation or avoid using generic types.',
-          element: tp,
-        );
-      },
-  };
 }
 
 String callToJsonOf(String name, FunctionType toJsonT) {

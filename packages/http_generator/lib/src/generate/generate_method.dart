@@ -104,7 +104,7 @@ class GenerateForMethod {
       yield r'final $response = await $send($request).then(#{{http|Response}}.fromStream);';
 
       try {
-        yield 'return ${Coding.decodeResponse(r'$response', futureType, method.library, decodingFactories(method))};';
+        yield 'return ${Coding.decodeResponse(r'$response', futureType, method.library)};';
       } catch (e) {
         final decodeMethodName = '_${method.name}Decode';
         addMember('@#{{meta|protected}} #{{dart:async|FutureOr}}<${futureType.toCode()}> $decodeMethodName(#{{http|Response}} response);');
