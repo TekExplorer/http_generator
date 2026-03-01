@@ -77,7 +77,8 @@ class RequestBody {
       return 'await $methodName($name)';
     }
 
-    // final isInferred = bodyType == null;
+    if (Checker.custom.hasAnnotationOf(param.element)) return buildCustom();
+
     switch (bodyType) {
       stream:
       case BodyType.stream:
@@ -202,7 +203,7 @@ class RequestBody {
 
       final paramType = param.element.type;
 
-      final useCustom = param.annotation.read('custom').boolValue;
+      final useCustom = Checker.custom.hasAnnotationOf(param.element);
 
       if (useCustom) {
         customParameters.add(param.element);
@@ -242,23 +243,24 @@ class RequestBody {
 
     for (final param in fields) {
       final paramName = param.element.name!;
-
       final paramType = param.element.type;
 
-      final useCustom = param.annotation.read('custom').boolValue;
+      final useCustom = Checker.custom.hasAnnotationOf(param.element);
 
       if (useCustom) {
         customParameters.add(param.element);
         continue;
-      } else if (Checker.map.isAssignableFromType(paramType)) {
+      }
+
+      if (paramType.isA(Checker.map)) {
         final [keyType, valueType] = paramType.typeArgumentsOf(Checker.map)!;
-        if (!Checker.string.isAssignableFromType(keyType)) {
+        if (!keyType.isA(Checker.string)) {
           throw InvalidGenerationSourceError(
-            'Parameter `${param.element.name}` annotated with `@Fields()` must be of type `Map<String, T>`.',
+            'Parameter `${param.element.name}` annotated with `@Fields()` must be of type `Map<String, String>`.',
             element: param.element,
           );
         }
-        if (Checker.string.isAssignableFromType(valueType)) {
+        if (valueType.isA(Checker.string)) {
           // its a Map<String, String>
           lines.add('$request.fields.addAll($paramName);');
           continue;
@@ -283,12 +285,12 @@ class RequestBody {
         }
 
         final mapSource = '$paramName.${toMapMethod.name}()';
-        if (Checker.map.isAssignableFromType(toMapMethod.returnType)) {
+
+        if (toMapMethod.returnType.isA(Checker.map)) {
           final [keyType, valueType] = toMapMethod.returnType.typeArgumentsOf(
             Checker.map,
           )!;
-          if (!Checker.string.isAssignableFromType(keyType) ||
-              !Checker.string.isAssignableFromType(valueType)) {
+          if (!keyType.isA(Checker.string) || !valueType.isA(Checker.string)) {
             throw InvalidGenerationSourceError(
               'The `toMap` or `toJson` method of parameter `${param.element.name}` annotated with `@Fields()` must return a `Map<String, String>`.',
               element: param.element,
@@ -304,7 +306,7 @@ class RequestBody {
       switch (entry.value) {
         case null:
           continue;
-        case FilePart value:
+        case #{{http_annotation|FilePart}} value:
           $request.files[entry.key] = value;
         default:
           $request.fields[entry.key] = entry.value.toString();
@@ -317,11 +319,6 @@ class RequestBody {
     if (customParameters.isNotEmpty) {
       final methodName = '_${method.name}BuildMultipart';
 
-      final customParamNames = customParameters.map((e) => e.name).join(', ');
-      log.warning(
-        'The following parameters are annotated with `@Field(custom: true)`, `@Fields(custom: true)` or could not be encoded automatically and require custom encoding logic: $customParamNames.'
-        ' Please implement the encoding logic for these parameters by implementing $methodName.',
-      );
       addMember('''
 @#{{meta|protected}} #{{dart:async|FutureOr}}<void> $methodName(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()});
 ''');
@@ -335,7 +332,7 @@ class RequestBody {
 
   @protected
   /// returns a `Map<String, String>`
-  String? _defineFieldsMap() {
+  MapLiteral? _defineFieldsMap() {
     final formFieldParameters = Checker.field.annotatedOf(
       method.formalParameters,
     );
@@ -346,47 +343,52 @@ class RequestBody {
     if (formFieldParameters.isEmpty && formFieldsParameters.isEmpty) {
       return null;
     }
-    final lines = <String>[];
+    final map = MapLiteral();
+
+    final customFields = <FormalParameterElement>[];
+
     for (final param in formFieldParameters) {
       final paramName = param.element.name!;
-      final encoded = Coding.bodyEncodable(
-        param.element.type,
-        ConverterContext(paramName, decodingFactories(method), method.library),
-        Checker.jsonConverter.firstAnnotationOf(param.element),
-      );
-      final fieldName = param.annotation.read('name').stringValue;
-      lines.add('${escapeDartString(fieldName)}: $encoded');
+
+      String encoded;
+      if (Checker.custom.hasAnnotationOf(param.element)) {
+        customFields.add(param.element);
+        continue;
+      } else if (param.element.type.isA(Checker.string)) {
+        encoded = paramName;
+      } else {
+        try {
+          encoded = callToJson('$paramName?', param.element);
+        } catch (e, s) {
+          log.warning(
+            'Failed to generate encoding for parameter `${param.element.name}` of type `${param.element.type.getDisplayString()}`. Falling back to custom encoding.',
+            e,
+            s,
+          );
+          encoded = '$paramName?.toString()';
+        }
+      }
+
+      final fieldName =
+          param.annotation.read('name').nullOr?.stringValue ?? paramName;
+      map.add(fieldName, encoded);
     }
     for (final param in formFieldsParameters) {
-      final type = param.element.type;
-      if (type is! InterfaceType) {
-        throw InvalidGenerationSourceError(
-          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
-          element: param.element,
-        );
+      if (Checker.custom.hasAnnotationOf(param.element)) {
+        customFields.add(param.element);
+        continue;
       }
-      final paramName = param.element.name!;
-
-      if (Checker.map.isAssignableFromType(type)) {
-        lines.add('...$paramName');
-      } else if (param.element.type case InterfaceType type) {
-        final encoding = Coding.bodyEncodable(
-          type,
-          ConverterContext(
-            paramName,
-            decodingFactories(method),
-            method.library,
-          ),
-          Checker.jsonConverter.firstAnnotationOf(param.element),
-        );
-        lines.add('...$encoding');
-      } else {
-        throw InvalidGenerationSourceError(
-          'Parameter `${param.element.name}` annotated with `@FormFields` must be of type `Map<String, String>` or provide a `toJson` or `toMap` method that returns a `Map<String, String>` without arguments.',
-          element: param.element,
-        );
-      }
+      map.addAll(Coding.encodeToMapStringString(param.element));
     }
-    return '{${lines.join(',\n')}}';
+
+    if (customFields.isNotEmpty) {
+      final methodName = '_${method.name}EncodeFields';
+      addMember(
+        '@#{{meta|protected}} #{{dart:async|FutureOr}}<Map<String, String>> $methodName(${customFields.toCode()});',
+      );
+      map.addSpread('$methodName(${customFields.toCallCode()})');
+    }
+
+    return map;
   }
 }

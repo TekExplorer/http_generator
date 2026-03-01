@@ -39,6 +39,7 @@ extension Checker on TypeChecker {
   static final headers = annotation('Headers');
   static final header = annotation('Header');
 
+  static final custom = annotation('Custom');
   // static final filePart = TypeChecker.typeNamed(FilePart);
 
   static final cancel = annotation('Cancel');
@@ -68,6 +69,7 @@ extension Checker on TypeChecker {
   }
 
   static final map = from('dart:core#Map');
+  static final iterable = from('dart:core#Iterable');
 
   static final string = from('dart:core#String');
 

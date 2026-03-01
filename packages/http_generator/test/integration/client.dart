@@ -59,7 +59,7 @@ class NoBaseUrl with _$NoBaseUrl {
 
   @override
   @Post('/special')
-  Future<SpecialClass> updateThing2(@Body(custom: true) SpecialClass body);
+  Future<SpecialClass> updateThing2(@Body() @custom SpecialClass body);
 
   @override
   FutureOr<void> _multipartBuildMultipart(
@@ -80,9 +80,9 @@ class NoBaseUrl with _$NoBaseUrl {
     @Field('name') String name,
     @Field('age') int? age,
     // TODO: clearly we want an @custom
-    @Field(null) http.MultipartFile file2,
-    @Field(null) io.File fileIo,
-    @Field(null, custom: true) Object unknown,
+    @Field() http.MultipartFile file2,
+    @Field() io.File fileIo,
+    @Field() @custom Object unknown,
   );
 
   // final _getResponse = (
@@ -294,7 +294,7 @@ class Gen<T> {
 }
 
 class Fields {
-  Map<String, dynamic> toJson() => {};
+  Map<String, String> toJson() => {};
 }
 
 class GenFields<T> {

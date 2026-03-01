@@ -1,8 +1,10 @@
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:analyzer_buffer/analyzer_buffer.dart';
 import 'package:build/build.dart';
+import 'package:collection/collection.dart';
 import 'package:http_annotation/http_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
@@ -10,6 +12,7 @@ import 'package:source_helper/source_helper.dart';
 import 'coders/coder_shared.dart';
 import 'coders/json_decoder_visitor.dart';
 import 'coders/json_encoder_visitor.dart';
+import 'generate/map_literal.dart';
 import 'type_checker/checkers.dart';
 
 part 'generate/abort_trigger.dart';

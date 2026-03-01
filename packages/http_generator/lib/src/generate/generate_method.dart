@@ -143,8 +143,8 @@ class GenerateForMethod {
   }
 
   @protected
-  String? parameterHeaders(MethodAnnotation annotation) {
-    final headers = <String>[];
+  MapLiteral? parameterHeaders(MethodAnnotation annotation) {
+    final headers = MapLiteral();
 
     final customHeaders = <FormalParameterElement>[];
 
@@ -156,7 +156,7 @@ class GenerateForMethod {
         continue;
       }
       final key = annotation.read('key').nullOr?.stringValue ?? element.name!;
-      headers.add("${escapeDartString(key)}: ?${element.name}");
+      headers.add(key, element.name!);
     }
 
     for (final (annotation: _, :element) in Checker.headers.annotatedOf(
@@ -166,10 +166,10 @@ class GenerateForMethod {
         customHeaders.add(element);
         continue;
       }
-      headers.add('...?${element.name}');
+      headers.addAll(Coding.encodeToMapStringString(element));
     }
 
-    if (headers.isEmpty && customHeaders.isEmpty) return null;
+    if (headers.entries.isEmpty && customHeaders.isEmpty) return null;
 
     if (customHeaders.isNotEmpty) {
       // sort by original order
@@ -184,13 +184,15 @@ class GenerateForMethod {
       addMember(
         '@#{{meta|protected}} Map<String, String> $methodName(${customHeaders.toCode()});',
       );
+
       final call = customHeaders.map(
         (e) => e.isNamed ? '${e.name}: ${e.name}' : e.name!,
       );
-      headers.add('...$methodName(${call.join(', ')})');
+
+      headers.addSpread('$methodName(${call.join(', ')})');
     }
 
-    return '{${headers.join(', ')}}';
+    return headers;
   }
 
   @protected

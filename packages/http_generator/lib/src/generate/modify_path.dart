@@ -1,18 +1,11 @@
 part of '../generator.dart';
 
 String modifyPath(String path, List<FormalParameterElement> formalParameters) {
-  final pathParameters = Checker.path
-      .annotatedOf(formalParameters)
-      .map(
-        (param) => (
-          path: PathAnnotation(param.annotation).value,
-          paramName: param.element.name!,
-        ),
-      );
+  final pathParameters = PathAnnotation.annotatedOf(formalParameters);
 
   final map = {
-    for (final (:path, :paramName) in pathParameters)
-      path ?? paramName: paramName,
+    for (final (:annotation, :element) in pathParameters)
+      annotation.value ?? element.name!: element.name!,
   };
 
   return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
@@ -26,5 +19,12 @@ String modifyPath(String path, List<FormalParameterElement> formalParameters) {
 }
 
 extension type PathAnnotation(ConstantReader reader) implements ConstantReader {
+  static Iterable<({PathAnnotation annotation, FormalParameterElement element})>
+  annotatedOf(List<FormalParameterElement> formalParameters) => Checker.path
+      .annotatedOf(formalParameters)
+      .map(
+        (e) => (annotation: PathAnnotation(e.annotation), element: e.element),
+      );
+
   String? get value => read('value').nullOr?.stringValue;
 }

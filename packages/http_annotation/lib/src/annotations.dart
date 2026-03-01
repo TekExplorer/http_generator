@@ -12,6 +12,14 @@ class RestClient {
   final bool? mixinClass;
 }
 
+const custom = Custom();
+
+@Target({TargetKind.parameter})
+final class Custom {
+  const Custom({this.encode});
+  final Function? encode;
+}
+
 @Target({TargetKind.parameter})
 class Path {
   const Path([this.value]);
@@ -26,11 +34,11 @@ enum BodyType { stream, bytes, string, json }
 
 @Target({TargetKind.parameter})
 final class Body {
-  const Body({this.custom = false}) : bodyType = null;
-  const Body.stream({this.custom = false}) : bodyType = BodyType.stream;
-  const Body.bytes({this.custom = false}) : bodyType = BodyType.bytes;
-  const Body.string({this.custom = false}) : bodyType = BodyType.string;
-  const Body.json({this.custom = false}) : bodyType = BodyType.json;
+  const Body() : bodyType = null;
+  const Body.stream() : bodyType = BodyType.stream;
+  const Body.bytes() : bodyType = BodyType.bytes;
+  const Body.string() : bodyType = BodyType.string;
+  const Body.json() : bodyType = BodyType.json;
 
   /// [bodyType] indicates how the body should be serialized and sent.
   /// if [:null:], we try to infer the body type from the parameter type.
@@ -45,7 +53,6 @@ final class Body {
   /// which generates a custom encoder method for you to implement.
 
   final BodyType? bodyType;
-  final bool custom;
 }
 
 // figure out dart docs templates
@@ -75,17 +82,16 @@ final class Fields {
 /// Multipart requests must be indicated with the [multipart] annotation.
 @Target({TargetKind.parameter})
 final class Field {
-  const Field(this.name, {this.custom = false});
+  const Field([this.name]);
 
   final String? name;
-  final bool custom;
 }
 
 // A single query parameter, e.g. `?search=foo`
 @Target({TargetKind.parameter})
 final class Query {
-  const Query(this.name);
-  final String name;
+  const Query([this.name]);
+  final String? name;
 }
 
 // Multiple query parameters, e.g. `?filter=name&filter=age`

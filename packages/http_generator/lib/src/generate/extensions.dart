@@ -175,7 +175,26 @@ extension DartTypeIsA on DartType {
 
     return true;
   }
+
+  bool isA3(
+    TypeChecker checker, [
+    Iterable<Predicate> typeArgumentPredicates = const [],
+  ]) {
+    if (!checker.isAssignableFromType(this)) return false;
+    final typeArguments = typeArgumentsOf(checker);
+    if (typeArguments == null) return true;
+    if (typeArgumentPredicates.isEmpty) return true;
+    for (final (index, predicate) in typeArgumentPredicates.indexed) {
+      if (index >= typeArguments.length) break;
+      final arg = typeArguments.elementAt(index);
+      if (!predicate(arg)) return false;
+    }
+
+    return true;
+  }
 }
+
+typedef Predicate = bool Function(DartType type);
 
 class TypeRef {
   TypeRef(this.checker, [this.typeArguments]);
