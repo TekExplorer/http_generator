@@ -348,25 +348,16 @@ class RequestBody {
     final customFields = <FormalParameterElement>[];
 
     for (final param in formFieldParameters) {
-      final paramName = param.element.name!;
-
-      String encoded;
       if (Checker.custom.hasAnnotationOf(param.element)) {
         customFields.add(param.element);
         continue;
-      } else if (param.element.type.isA(Checker.string)) {
-        encoded = paramName;
-      } else {
-        try {
-          encoded = callToJson('$paramName?', param.element);
-        } on InvalidGenerationSourceError {
-          encoded = '$paramName?.toString()';
-        }
       }
 
+      final paramName = param.element.name!;
       final fieldName =
           param.annotation.read('name').nullOr?.stringValue ?? paramName;
-      map.add(fieldName, encoded);
+
+      map.add(fieldName, Coding.encodeToString(param.element));
     }
     for (final param in formFieldsParameters) {
       if (Checker.custom.hasAnnotationOf(param.element)) {

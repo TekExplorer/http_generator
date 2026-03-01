@@ -8,14 +8,14 @@ String? abortTrigger(MethodElement method) {
   for (final cancel in cancels) {
     final type = cancel.element.type;
     final name = cancel.element.name!;
-    if (Checker.cancelToken.isAssignableFromType(type)) {
+    if (type.isA(Checker.cancelToken)) {
       final q = type.nullabilitySuffix == .question ? '?' : '';
       futures.add('$name$q.whenCancel');
-    } else if (Checker.future.isAssignableFromType(type)) {
+    } else if (type.isA(Checker.future)) {
       futures.add(name);
     } else {
       throw InvalidGenerationSourceError(
-        'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` or `Future<void>`.',
+        'Parameter `$name` annotated with `@Cancel` must be of type `CancelToken` (from Dio) or `Future<void>`.',
         element: cancel.element,
       );
     }

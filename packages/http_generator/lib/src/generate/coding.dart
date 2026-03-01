@@ -38,36 +38,50 @@ class Coding {
     return type.acceptWithArgument(JsonEncoderVisitor(), context);
   }
 
+  static String encodeToJson(FormalParameterElement element) {
+    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(element);
+    if (jsonConverter != null) {
+      return '${jsonConverter.toCode()}.toJson(${element.name!})';
+    }
+    final type = element.type;
+    if (type.isA(Checker.string)) return element.name!;
+
+    return type.acceptWithArgument(
+      JsonEncoderVisitor(),
+      ConverterContext(element.name!, {}, element.library!),
+    );
+  }
+
   static Iterable<MapLiteralEntry> encodeToMapStringString(
-    VariableElement variable, {
+    FormalParameterElement element, {
     bool allowDynamic = false,
   }) {
-    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(variable);
+    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(element);
     if (jsonConverter != null) {
-      return [.spread('${jsonConverter.toCode()}.toJson(${variable.name!})')];
+      return [.spread('${jsonConverter.toCode()}.toJson(${element.name!})')];
     }
-    final type = variable.type;
+    final type = element.type;
 
     if (type.isA(Checker.map, [Checker.string, Checker.string])) {
-      return [.spread(variable.name!)];
+      return [.spread(element.name!)];
     }
 
     return type.acceptWithArgument(
       MapStringStringEncoderVisitor(allowDynamic: allowDynamic),
-      variable,
+      element,
     );
   }
 
-  static String encodeToString(VariableElement variable) {
-    final type = variable.type;
-    if (type.isA(Checker.string)) return variable.name!;
+  static String encodeToString(FormalParameterElement element) {
+    final type = element.type;
+    if (type.isA(Checker.string)) return element.name!;
 
-    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(variable);
+    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(element);
     if (jsonConverter != null) {
-      return '${jsonConverter.toCode()}.toJson(${variable.name!})';
+      return '${jsonConverter.toCode()}.toJson(${element.name!})';
     }
 
-    return encodeTypeToString(type, variable.name!, variable.library!);
+    return encodeTypeToString(type, element.name!, element.library!);
   }
 
   static String encodeTypeToString(
