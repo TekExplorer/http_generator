@@ -62,9 +62,15 @@ MapLiteral? createQuery(
         type.isA(Checker.iterable, [Checker.string])) {
       mapLiteral.add(queryKey, paramName);
     } else if (type.isA(Checker.iterable)) {
-      mapLiteral.add(queryKey, '$paramName?.map((e) => e.toString())');
+      final elementType = type.typeArgumentsOf(Checker.iterable)!.single;
+      final encode = Coding.encodeTypeToString(
+        elementType,
+        'e',
+        param.element.library!,
+      );
+      mapLiteral.add(queryKey, '$paramName?.map((e) => $encode)');
     } else {
-      mapLiteral.add(queryKey, '$paramName?.toString()');
+      mapLiteral.add(queryKey, Coding.encodeToString(param.element));
     }
   }
 

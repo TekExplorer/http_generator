@@ -39,5 +39,5 @@ final class _MapLiteralEntryKeyValue implements MapLiteralEntry {
   _MapLiteralEntryKeyValue(this.key, this.value);
 
   @override
-  String toString() => '?${escapeDartString(key)}: ?$value';
+  String toString() => '${escapeDartString(key)}: ?$value';
 }

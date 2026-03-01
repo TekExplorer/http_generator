@@ -57,6 +57,36 @@ class Coding {
       variable,
     );
   }
+
+  static String encodeToString(VariableElement variable) {
+    final type = variable.type;
+    if (type.isA(Checker.string)) return variable.name!;
+
+    final jsonConverter = Checker.jsonConverter.firstAnnotationOf(variable);
+    if (jsonConverter != null) {
+      return '${jsonConverter.toCode()}.toJson(${variable.name!})';
+    }
+
+    return encodeTypeToString(type, variable.name!, variable.library!);
+  }
+
+  static String encodeTypeToString(
+    DartType type,
+    String varName,
+    LibraryElement library,
+  ) {
+    if (type.isA(Checker.string)) return varName;
+
+    try {
+      return type.acceptWithArgument(
+        JsonEncoderVisitor(),
+        ConverterContext(varName, {}, library),
+      );
+    } on InvalidGenerationSourceError {
+      final q = type.nullabilitySuffix == .question ? '?' : '';
+      return '$varName$q.toString()';
+    }
+  }
 }
 
 class MapStringStringEncoderVisitor

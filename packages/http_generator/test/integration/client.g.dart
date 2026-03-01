@@ -39,7 +39,7 @@ mixin _$NoBaseUrl implements $GeneratedClient {
       'x-header': 'value',
     });
     $request.headers.addAll({
-      ?'x-param-header': ?paramHeader,
+      'x-param-header': ?paramHeader,
       ...?headers,
       ...?_getResponseHeaders(fields, specialHeader: specialHeader),
     });
@@ -289,7 +289,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   ) async {
     Uri $uri = $buildUrl('/query');
     $uri = $uri.replace(
-      queryParameters: {...?$uri.queryParametersAll, ?'search': ?search},
+      queryParameters: {...?$uri.queryParametersAll, 'search': ?search},
     );
     final $request = await $createRequest('GET', $uri);
 
@@ -323,7 +323,7 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   ) async {
     Uri $uri = $buildUrl('/everything/${id}');
     $uri = $uri.replace(
-      queryParameters: {...?$uri.queryParametersAll, ?'search': ?search},
+      queryParameters: {...?$uri.queryParametersAll, 'search': ?search},
       fragment: fragment,
     );
     final $request = await $createRequest(
@@ -402,11 +402,11 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       'POST',
       $uri,
       body: EncodedFields.from({
-        ?'f1': ?field1,
-        ?'f2': ?field2,
-        ?'f3': ?field3?.toString(),
-        ?'f4': ?field4,
-        ?'f5': ?field5?.toJson(),
+        'f1': ?field1,
+        'f2': ?field2,
+        'f3': ?field3?.toString(),
+        'f4': ?field4,
+        'f5': ?field5?.toJson(),
         ...?grouped?.toJson(),
         ...?rest,
       }),

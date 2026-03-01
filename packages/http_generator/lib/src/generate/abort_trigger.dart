@@ -9,8 +9,8 @@ String? abortTrigger(MethodElement method) {
     final type = cancel.element.type;
     final name = cancel.element.name!;
     if (Checker.cancelToken.isAssignableFromType(type)) {
-      final question = type.nullabilitySuffix == .question ? '?' : '';
-      futures.add('$name.${question}whenCancel');
+      final q = type.nullabilitySuffix == .question ? '?' : '';
+      futures.add('$name$q.whenCancel');
     } else if (Checker.future.isAssignableFromType(type)) {
       futures.add(name);
     } else {

@@ -359,12 +359,7 @@ class RequestBody {
       } else {
         try {
           encoded = callToJson('$paramName?', param.element);
-        } catch (e, s) {
-          log.warning(
-            'Failed to generate encoding for parameter `${param.element.name}` of type `${param.element.type.getDisplayString()}`. Falling back to custom encoding.',
-            e,
-            s,
-          );
+        } on InvalidGenerationSourceError {
           encoded = '$paramName?.toString()';
         }
       }
