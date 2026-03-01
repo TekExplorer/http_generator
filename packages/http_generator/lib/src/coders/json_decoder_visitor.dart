@@ -1,6 +1,6 @@
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_visitor.dart';
-import 'package:analyzer_buffer/analyzer_buffer.dart';
+import 'package:analyzer_buffer/analyzer_buffer.dart' show CodeFor2;
 import 'package:collection/collection.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';

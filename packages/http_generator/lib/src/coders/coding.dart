@@ -23,17 +23,17 @@ class Coding {
     );
   }
 
-  // TODO: simplify
-  static String bodyEncodable(
-    DartType type,
-    ConverterContext context,
-    DartObject? jsonConverter,
-  ) {
-    if (jsonConverter != null) {
-      return '${jsonConverter.toCode()}.toJson(${context.varName})';
-    }
-    return type.acceptWithArgument(JsonEncoderVisitor(), context);
-  }
+  // // TODO: simplify
+  // static String bodyEncodable(
+  //   DartType type,
+  //   ConverterContext context,
+  //   DartObject? jsonConverter,
+  // ) {
+  //   if (jsonConverter != null) {
+  //     return '${jsonConverter.toCode()}.toJson(${context.varName})';
+  //   }
+  //   return type.acceptWithArgument(JsonEncoderVisitor(), context);
+  // }
 
   static String encodeToJson(FormalParameterElement element) {
     final jsonConverter = Checker.jsonConverter.firstAnnotationOf(element);

@@ -5,11 +5,17 @@ import 'package:meta/meta_meta.dart';
 // TODO: support any interface like mixins, extensions, extension types etc once augmentations are released
 @Target({TargetKind.classType})
 class RestClient {
-  const RestClient({this.baseUrl, this.mixinName, this.mixinClass});
+  const RestClient({
+    this.baseUrl,
+    this.mixinName,
+    this.mixinClass,
+    this.implementSelf,
+  });
 
   final String? baseUrl;
   final String? mixinName;
   final bool? mixinClass;
+  final bool? implementSelf;
 }
 
 const custom = Custom();

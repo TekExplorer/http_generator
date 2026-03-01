@@ -53,49 +53,32 @@ extension Checker on TypeChecker {
 
   static final uint8List = from('dart:typed_data#Uint8List');
 
-  static bool implementsListInt(DartType type) {
-    final listArg = type.typeArgumentsOf(from('dart:core#List'))?.single;
-    if (listArg == null) return false;
-    return listArg.isDartCoreInt;
-  }
-
   static final future = from('dart:async#Future');
 
   static final stream = from('dart:async#Stream');
-  static bool implementsStreamListInt(DartType type) {
-    final streamArgs = type.typeArgumentsOf(stream);
-    if (streamArgs == null) return false;
-    return implementsListInt(streamArgs.single);
-  }
 
   static final map = from('dart:core#Map');
+
+  static final list = from('dart:core#List');
   static final iterable = from('dart:core#Iterable');
 
   static final string = from('dart:core#String');
-
-  static bool implementsMapStringString(DartType type) {
-    final mapArgs = type.typeArgumentsOf(map);
-    if (mapArgs == null) return false;
-    final [key, value] = mapArgs;
-    return key.isA(string) && value.isA(string);
-  }
 
   static final protoGeneratedMessage = from('protobuf#GeneratedMessage');
 }
 
 extension TypeHelpers on DartType {
-  bool get implementsMapStringString =>
+  bool get isAMapStringString =>
       isA(Checker.map, [Checker.string, Checker.string]);
 
-  bool get implementsStreamListInt {
-    return isA2(
-      .new(Checker.stream, [
-        .fromUrl('dart:core#List', [.fromUrl('dart:core#int')]),
-      ]),
-    );
+  bool get isAStreamListInt {
+    if (!isA(Checker.stream)) return false;
+    final arg = typeArgumentsOf(Checker.stream)?.single;
+    if (arg == null) return false;
+    return arg.isAListInt;
   }
 
-  bool get implementsListInt => Checker.implementsListInt(this);
+  bool get isAListInt => isA(Checker.list, [Checker.from('dart:core#int')]);
 }
 
 extension AnnotatedOf on TypeChecker {

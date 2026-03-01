@@ -90,7 +90,7 @@ class GenerateForMethod {
         return;
       }
 
-      if (Checker.response.isAssignableFromType(futureType)) {
+      if (futureType.isA(Checker.response)) {
         yield r'return await $send($request).then(#{{http|Response}}.fromStream);';
         return;
       }
@@ -163,7 +163,8 @@ class GenerateForMethod {
     for (final (annotation: _, :element) in Checker.headers.annotatedOf(
       method.formalParameters,
     )) {
-      if (!Checker.implementsMapStringString(element.type)) {
+      // if (!Checker.implementsMapStringString(element.type)) {
+      if (!element.type.isA(Checker.map, [Checker.string, Checker.string])) {
         customHeaders.add(element);
         continue;
       }

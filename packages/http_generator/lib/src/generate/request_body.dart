@@ -82,7 +82,7 @@ class RequestBody {
     switch (bodyType) {
       stream:
       case BodyType.stream:
-        if (!Checker.implementsStreamListInt(type)) {
+        if (!type.isAStreamListInt) {
           log.warning(
             [
               'Type of `$name` is `${type.getDisplayString()}`, which is not a `Stream<List<int>>`.',
@@ -95,10 +95,10 @@ class RequestBody {
         return '$encoded.stream($name)';
       bytes:
       case BodyType.bytes:
-        if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        if (type.isA(Checker.protoGeneratedMessage)) {
           return '$encoded.bytes($name.writeToBuffer())';
         }
-        if (!Checker.implementsListInt(type)) {
+        if (!type.isAListInt) {
           log.warning(
             [
               'Type of `$name` is `${type.getDisplayString()}`, which is not a `List<int>` or `Uint8List`.',
@@ -111,11 +111,10 @@ class RequestBody {
         return '$encoded.bytes($name)';
       string:
       case BodyType.string:
-        if (type.isDartCoreString ||
-            Checker.string.isAssignableFromType(type)) {
+        if (type.isA(Checker.string)) {
           return '$encoded.string($name)';
         }
-        if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        if (type.isA(Checker.protoGeneratedMessage)) {
           log.warning(
             'Parameter `$name` is of type `${type.getDisplayString()}`, which is a protobuf message. '
             'Inferring string body encoding using `toTextFormat()`. If this is not what you intended, please specify the body type explicitly with `@Body.bytes()` or `@Body.json()` or implement a custom encoder with `@Body.custom()`.',
@@ -125,15 +124,11 @@ class RequestBody {
         return '$encoded.string($name.toString())';
       json:
       case BodyType.json:
-        if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        if (type.isA(Checker.protoGeneratedMessage)) {
           return '$encoded.string($name.writeToJson())';
         }
         try {
-          final bodyEncodable = Coding.bodyEncodable(
-            type,
-            ConverterContext(name, method.library, method.formalParameters),
-            Checker.jsonConverter.firstAnnotationOf(param.element),
-          );
+          final bodyEncodable = Coding.encodeToJson(param.element);
           return '$encoded.string(#{{dart:convert|jsonEncode}}($bodyEncodable))';
         } catch (e, s) {
           log.warning(
@@ -146,10 +141,10 @@ class RequestBody {
 
       case null:
         // inference!
-        if (Checker.string.isAssignableFromType(type)) continue string;
-        if (Checker.implementsStreamListInt(type)) continue stream;
-        if (Checker.implementsListInt(type)) continue bytes;
-        if (Checker.protoGeneratedMessage.isAssignableFromType(type)) {
+        if (type.isA(Checker.string)) continue string;
+        if (type.isAStreamListInt) continue stream;
+        if (type.isAListInt) continue bytes;
+        if (type.isA(Checker.protoGeneratedMessage)) {
           log.info(
             'Parameter `$name` is of type `${type.getDisplayString()}`, which is a protobuf message. '
             'Inferring body type as Bytes. If this is not what you intended, please specify the body type explicitly with `@Body.json()` or implement a custom encoder with `@Body.custom()`.',

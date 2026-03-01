@@ -9,7 +9,7 @@ part of 'client.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-mixin _$NoBaseUrl implements $GeneratedClient {
+mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
   @protected
   Future<http.StreamedResponse> $send(http.BaseRequest request) {
     return request.send();
@@ -130,24 +130,12 @@ mixin _$NoBaseUrl implements $GeneratedClient {
     final $response = await $send($request).then(http.Response.fromStream);
     return fromJsonR(jsonDecode($response.body));
   }
-}
 
-// GENERATED CODE - DO NOT MODIFY BY HAND
-// ignore_for_file: type=lint, type=warning
-
-abstract mixin class AClientMixin implements $GeneratedClient {
-  @protected
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
-    return request.send();
-  }
-
-  Uri get baseUrl => Uri.parse('http://example.com');
-
-  Uri $buildUrl(String path) => baseUrl.resolve(path);
-
-  Future<http.Response> getResponse() async {
+  Future<http.Response> getResponse2() async {
     Uri $uri = $buildUrl('/response');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     return await $send($request).then(http.Response.fromStream);
   }
@@ -155,6 +143,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   Future<Data> getThing() async {
     Uri $uri = $buildUrl('/thing');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return Data.fromJson(jsonDecode($response.body) as Map<String, dynamic>);
@@ -164,6 +154,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     Uri $uri = $buildUrl('/raw-thing');
     final $request = await $createRequest('GET', $uri);
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     final $response = await $send($request).then(http.Response.fromStream);
     return $response.body;
   }
@@ -171,6 +163,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   Future<Gen<Data>> getGenericThing() async {
     Uri $uri = $buildUrl('/generic-thing');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return Gen<Data>.fromJson(
@@ -187,6 +181,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(body),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -198,6 +194,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode(body)),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -208,6 +206,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: BodyEncoded.string(jsonEncode(body.toJson())),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -222,6 +222,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -232,6 +234,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: BodyEncoded.string(jsonEncode(body.map((e) => e.toJson()))),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -244,12 +248,16 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(body),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
   Future<()> getRecord0() async {
     Uri $uri = $buildUrl('/record0');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return ();
@@ -258,6 +266,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   Future<(int, String)> getRecord2() async {
     Uri $uri = $buildUrl('/record2');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return () {
@@ -269,6 +279,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
   Future<({int id, String name})> getRecordNamed() async {
     Uri $uri = $buildUrl('/record_named');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return () {
@@ -285,6 +297,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.string(jsonEncode({'id': body.id, 'name': body.name})),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -295,6 +309,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: BodyEncoded.string(jsonEncode([body.$1, body.$2])),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -309,12 +325,16 @@ abstract mixin class AClientMixin implements $GeneratedClient {
     );
     final $request = await $createRequest('GET', $uri);
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     return await $send($request).then(http.Response.fromStream);
   }
 
   Future<http.Response> getWithPath(String id, String detailId) async {
     Uri $uri = $buildUrl('/path/${id}/detail/${detailId}');
     final $request = await $createRequest('GET', $uri);
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     return await $send($request).then(http.Response.fromStream);
   }
@@ -326,6 +346,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       abortTrigger: abortTrigger,
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -355,6 +377,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       ),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     final $response = await $send($request).then(http.Response.fromStream);
     return (jsonDecode($response.body) as List)
         .map(
@@ -379,6 +403,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({...?fields}),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -390,6 +416,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: EncodedFields.from({...?fields?.toJson()}),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -400,6 +428,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: EncodedFields.from({...?fields?.toJson((obj) => obj)}),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -428,6 +458,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       }),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     await $send($request).then(http.Response.fromStream);
   }
 
@@ -438,6 +470,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: BodyEncoded.stream(body),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }
@@ -450,6 +484,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       body: BodyEncoded.stream(body),
     );
 
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+
     return await $send($request);
   }
 
@@ -460,6 +496,8 @@ abstract mixin class AClientMixin implements $GeneratedClient {
       $uri,
       body: BodyEncoded.stream(body),
     );
+
+    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }

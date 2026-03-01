@@ -9,13 +9,9 @@ part 'client.g.dart';
 
 class SpecialClass {}
 
-@Headers({'x-class-header': 'class-header-value'})
-@RestClient()
-class NoBaseUrl with _$NoBaseUrl {
-  NoBaseUrl({required this.baseUrl});
+class NoBaseUrlImpl extends NoBaseUrl with _$NoBaseUrl {
+  NoBaseUrlImpl({required super.baseUrl, required super.client}) : super._();
 
-  @override
-  final Uri baseUrl;
   @override
   Map<String, String> _getResponseHeaders(
     Fields fields, {
@@ -29,25 +25,6 @@ class NoBaseUrl with _$NoBaseUrl {
   }
 
   @override
-  @Method('GET', '/response', headers: {'x-header': 'value'})
-  @Headers({'x-method-header': 'method-header-value'})
-  Future<Response> getResponse(
-    @Headers() Map<String, String> headers,
-    @Header('x-param-header') String? paramHeader,
-    @Headers() Fields fields, {
-    @Header() SpecialClass? specialHeader,
-  });
-
-  @override
-  BodyEncoded _updateThingEncode(SpecialClass body) {
-    return .string('custom-encoded-${body.hashCode}');
-  }
-
-  @override
-  @Post('/special')
-  Future<StreamedResponse> updateThing(@Body() SpecialClass body);
-
-  @override
   BodyEncoded _updateThing2Encode(SpecialClass body) {
     return .fields({'custom': 'custom-encoded-${body.hashCode}'});
   }
@@ -58,8 +35,9 @@ class NoBaseUrl with _$NoBaseUrl {
   }
 
   @override
-  @Post('/special')
-  Future<SpecialClass> updateThing2(@Body() @custom SpecialClass body);
+  BodyEncoded _updateThingEncode(SpecialClass body) {
+    return .string('custom-encoded-${body.hashCode}');
+  }
 
   @override
   FutureOr<void> _multipartBuildMultipart(
@@ -72,8 +50,38 @@ class NoBaseUrl with _$NoBaseUrl {
       filename: fileIo.path.split('/').last,
     );
   }
+}
 
-  @override
+@Headers({'x-class-header': 'class-header-value'})
+@RestClient(implementSelf: true)
+abstract class NoBaseUrl {
+  factory NoBaseUrl({required Uri baseUrl, required http.Client client}) =
+      NoBaseUrlImpl;
+
+  NoBaseUrl._({required this.baseUrl, required this.client});
+  final http.Client client;
+
+  Future<StreamedResponse> $send(BaseRequest request) {
+    return client.send(request);
+  }
+
+  final Uri baseUrl;
+
+  @Method('GET', '/response', headers: {'x-header': 'value'})
+  @Headers({'x-method-header': 'method-header-value'})
+  Future<Response> getResponse(
+    @Headers() Map<String, String> headers,
+    @Header('x-param-header') String? paramHeader,
+    @Headers() Fields fields, {
+    @Header() SpecialClass? specialHeader,
+  });
+
+  @Post('/special')
+  Future<StreamedResponse> updateThing(@Body() SpecialClass body);
+
+  @Post('/special')
+  Future<SpecialClass> updateThing2(@Body() @custom SpecialClass body);
+
   @Post('/multipart', multipart: true)
   Future<void> multipart(
     @Field('file') FilePart file,
@@ -85,7 +93,6 @@ class NoBaseUrl with _$NoBaseUrl {
     @Field() @custom Object unknown,
   );
 
-  @override
   @Post('/weird')
   Future<R> weird<T, R>(
     @Body.json() T body,
@@ -116,13 +123,13 @@ class NoBaseUrl with _$NoBaseUrl {
   //   ),
   // );
 
-  // @override
+  //
   // get $coding => (
   //   decodeSpecialClass: (response) => SpecialClass(),
   //   encodeSpecialClass: (body) => .string('custom-encoded-${body.hashCode}'),
   // );
 
-  // @override
+  //
   // final $coding = .new(
   //   encodeSpecialClass: (body) {
   //     return .fields({'value': 'encoded-${body.hashCode}'});
@@ -131,105 +138,70 @@ class NoBaseUrl with _$NoBaseUrl {
   //     return SpecialClass();
   //   },
   // );
-}
 
-@RestClient(
-  baseUrl: 'http://example.com',
-  mixinClass: true,
-  mixinName: 'AClientMixin',
-)
-abstract class AClient extends AClientMixin {
-  AClient(this.client);
-
-  final http.Client client;
-
-  @override
-  Future<StreamedResponse> $send(BaseRequest request) {
-    return client.send(request);
-  }
-
-  @override
   @Method('GET', '/response')
-  Future<Response> getResponse();
+  Future<Response> getResponse2();
 
-  @override
   @Method('GET', '/thing')
   Future<Data> getThing();
 
-  @override
   @Method('GET', '/raw-thing')
   Future<String> getRawThing();
 
-  @override
   @Get('/generic-thing')
   Future<Gen<Data>> getGenericThing();
 
-  @override
   @Post('/body')
   Future<void> withBody(@Body() String body);
 
-  @override
   @Post('/body2')
   Future<void> withBody2(@Body() Map<String, dynamic> body);
 
-  @override
   @Post('/body3')
   Future<void> withBody3(@Body() Data body);
 
-  @override
   @Post('/body4')
   Future<void> withBody4(@Body() Gen<Data> body);
 
-  @override
   @Post('/body5')
   Future<void> withBody5(@Body() List<Data> body);
 
-  @override
   @Post('/body6')
   Future<void> withBody6(@Body.string() String body);
 
-  @override
   @Get('/record0')
   Future<()> getRecord0();
 
   // @Get('/record1')
   // Future<(int i,)> getRecord1();
 
-  @override
   @Get('/record2')
   Future<(int i, String name)> getRecord2();
 
-  @override
   @Get('/record_named')
   Future<({int id, String name})> getRecordNamed();
 
-  @override
   @Post('/record_named_body')
   Future<void> withRecordNamedBody(@Body() ({int id, String name}) body);
 
-  @override
   @Post('/record2_body')
   Future<void> withRecord2Body(@Body() (int i, String name) body);
 
-  @override
   @Get('/query')
   Future<Response> getWithQuery(
     @Query('search') String search,
     @Queries() Map<String, dynamic> filters,
   );
 
-  @override
   @Get('/path/{id}/detail/{detailId}')
   Future<Response> getWithPath(
     @Path('id') String id,
     @Path('detailId') String detailId,
   );
 
-  @override
   @Get('/cancelable')
   Future<void> cancelable(@Cancel() Future<void> abortTrigger);
 
-  @override
   @Post('/everything/{id}')
   Future<List<Map<String, Gen<Data>>>> everything(
     @Path('id') String id,
@@ -239,19 +211,15 @@ abstract class AClient extends AClientMixin {
     @Cancel() Future<void> abortTrigger,
   );
 
-  @override
   @Post('/fields')
   Future<void> withFields(@fields Map<String, String> fields);
 
-  @override
   @Post('/fields/object')
   Future<void> withFields2(@fields Fields fields);
 
-  @override
   @Post('/fields/generic')
   Future<void> withFields3(@fields GenFields<Stringy> fields);
 
-  @override
   @Post('/fields')
   Future<void> withFields4(
     @Field('f1') String field1,
@@ -263,15 +231,12 @@ abstract class AClient extends AClientMixin {
     @fields Map<String, String> rest,
   );
 
-  @override
   @Put('/stream')
   Future<StreamedResponse> streamed(@Body() Stream<List<int>> body);
 
-  @override
   @Put('/stream')
   Future<StreamedResponse> streamed2(@Body() Stream<Uint8List> body);
 
-  @override
   @Put('/stream')
   Future<StreamedResponse> streamed3(@Body() http.ByteStream body);
 }

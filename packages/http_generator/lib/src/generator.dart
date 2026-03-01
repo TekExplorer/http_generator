@@ -15,8 +15,8 @@ import 'coders/json_encoder_visitor.dart';
 import 'generate/map_literal.dart';
 import 'type_checker/checkers.dart';
 
+part 'coders/coding.dart';
 part 'generate/abort_trigger.dart';
-part 'generate/coding.dart';
 part 'generate/extensions.dart';
 part 'generate/generate_method.dart';
 part 'generate/modify_path.dart';
@@ -30,6 +30,7 @@ class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
     baseUrl: annotation.read('baseUrl').nullOr?.stringValue,
     mixinName: annotation.read('mixinName').nullOr?.stringValue,
     mixinClass: annotation.read('mixinClass').nullOr?.boolValue,
+    implementSelf: annotation.read('implementSelf').nullOr?.boolValue,
   );
 
   @override
@@ -55,9 +56,9 @@ class HttpClientGenerator extends GeneratorForAnnotation<RestClient> {
     final baseUrl = annotationValue.baseUrl;
     final mixinName = annotationValue.mixinName ?? '_\$${element.name}';
     final mixinClass = annotationValue.mixinClass == true;
-
+    final implementSelf = annotationValue.implementSelf == true;
     buffer.write('''
-${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName implements #{{http_annotation|\$GeneratedClient}} {
+${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName implements #{{http_annotation|\$GeneratedClient}}${implementSelf ? ', ${element.name}' : ''} {
   @#{{meta|protected}}
   Future<#{{http|StreamedResponse}}> \$send(#{{http|BaseRequest}} request) {
     return request.send();
