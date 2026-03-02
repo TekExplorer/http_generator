@@ -119,6 +119,7 @@ class MapStringStringEncoderVisitor
 
   @override
   visitInterfaceType(InterfaceType type, element) sync* {
+    final q = type.nullabilitySuffix == .question ? '?' : '';
     // Check for toJson or toMap method that returns Map<String, String>
     final encode = type.allMethods.where(
       (m) => {'toJson', 'toMap'}.contains(m.name),
@@ -139,7 +140,7 @@ class MapStringStringEncoderVisitor
       final arguments = args.join(', ');
 
       if (m.returnType.isA(Checker.map, [Checker.string, Checker.string])) {
-        yield .spread('${element.name!}?.${m.name}($arguments)');
+        yield .spread('${element.name!}$q.${m.name}($arguments)');
         return;
       }
 
@@ -147,12 +148,14 @@ class MapStringStringEncoderVisitor
         final [_, valueType] = m.returnType.typeArgumentsOf(Checker.map)!;
 
         if (valueType.isA(Checker.string) || allowDynamic) {
-          yield .spread('${element.name!}?.${m.name}($arguments)');
+          yield .spread('${element.name!}$q.${m.name}($arguments)');
           return;
         }
 
+        final q2 = m.returnType.nullabilitySuffix == .question ? '?' : '';
         yield .spread(
-          '${element.name!}?.${m.name}($arguments)?.map((k, v) => MapEntry(k, v.toString()))',
+          '${element.name!}$q.${m.name}($arguments)$q2'
+          '.map((k, v) => MapEntry(k, ${Coding.encodeTypeToString(valueType, 'v', element.library!, [])}))',
         );
         return;
       }
@@ -172,12 +175,14 @@ class MapStringStringEncoderVisitor
         element: element,
       );
     }
+    final q = type.nullabilitySuffix == .question ? '?' : '';
     for (final field in type.namedFields) {
       final fieldName = field.name;
       if (field.type.isA(Checker.string) || allowDynamic) {
-        yield .kv(fieldName, '${element.name!}?.$fieldName');
+        yield .kv(fieldName, '${element.name!}$q.$fieldName');
       } else {
-        yield .kv(fieldName, '${element.name!}?.$fieldName?.toString()');
+        final q2 = field.type.nullabilitySuffix == .question ? '?' : '';
+        yield .kv(fieldName, '${element.name!}$q.$fieldName$q2.toString()');
       }
     }
   }
@@ -226,9 +231,13 @@ class MapStringStringEncoderVisitor
   visitVoidType(VoidType type, element) => _throw(type, element);
 }
 
-String callToJsonOf(String name, FunctionType toJsonT) {
-  final argument = toJsonT.formalParameters.singleOrNull;
-  if (argument == null) {
+String callToJsonOf(
+  String name,
+  FunctionType toJsonT, {
+  String Function(String toJson, DartType returnType)? wrap,
+}) {
+  final object = toJsonT.formalParameters.singleOrNull;
+  if (object == null) {
     throw InvalidGenerationSourceError(
       'The `toJson` or `toMap` method used for encoding query parameters must have exactly one parameter. Found ${toJsonT.formalParameters.length} parameters.',
       element: toJsonT.element,
@@ -236,40 +245,41 @@ String callToJsonOf(String name, FunctionType toJsonT) {
   }
   final returnType = toJsonT.returnType;
 
-  return callToJson(name, argument, returnType);
+  return callToJson(name, object, returnType: returnType, wrap: wrap);
 }
 
 String callToJson(
   String name,
-  FormalParameterElement argument, [
+  FormalParameterElement object, {
   DartType? returnType,
-]) {
-  final argumentType = argument.type;
+  String Function(String toJson, DartType returnType)? wrap,
+}) {
+  String returns(String code, DartType returnType) {
+    return wrap?.call(code, returnType) ?? code;
+  }
 
-  if (returnType != null && argumentType.isAssignableTo(returnType)) {
-    return name;
+  final objectType = object.type;
+
+  if (returnType != null && objectType.isAssignableTo(returnType)) {
+    return returns(name, returnType);
   }
 
   // see if other things work
-  if (argumentType is! InterfaceType) {
+  if (objectType is! InterfaceType) {
     throw InvalidGenerationSourceError(
-      'The `toJson` or `toMap` method used for encoding query parameters must have a parameter that is assignable to its return type. Found parameter of type `$argumentType` and return type `$returnType`.',
-      element: argument,
+      'The `toJson` or `toMap` method used for encoding query parameters must have a parameter that is assignable to its return type. Found parameter of type `$objectType` and return type `$returnType`.',
+      element: object,
     );
   }
 
-  final toJson = argumentType.allMethods
+  final toJson = objectType.allMethods
       .where((c) => c.name == 'toJson' || c.name == 'toMap')
       .firstOrNull;
   if (toJson == null) {
     throw InvalidGenerationSourceError(
-      'Type `${argument.name}` cannot be converted to `Map<String, String>`. Please provide a `toJson` method that returns a `Map<String, String>` or `Map<String, dynamic>`, or mark it with @custom for custom serialization.',
-      element: argument,
+      'Type `${object.name}` cannot be converted to `Map<String, String>`. Please provide a `toJson` method that returns a `Map<String, String>` or `Map<String, dynamic>`, or mark it with @custom for custom serialization.',
+      element: object,
     );
-  }
-
-  if (toJson.formalParameters.where((p) => p.isRequired).isEmpty) {
-    return '$name.${toJson.name!}()';
   }
 
   final args = <String>[];
@@ -278,13 +288,17 @@ String callToJson(
     final type = p.type;
     if (type is! FunctionType) {
       throw InvalidGenerationSourceError(
-        'Only function parameters are supported in `toJson` methods used for encoding query parameters. Parameter `${p.name}` in `${type.element?.name}.${toJson.name}` is of type `$type`.',
+        'Generic argument parameters in `toJson` or `toMap` methods used for encoding query parameters must be functions. Parameter `${p.name}` in `${object.name}.${toJson.name}` is of type `$type`.',
         element: p,
       );
     }
 
+    // Dont wrap - this is an implementation detail of generic argument encoding
     args.add('(obj) => ${callToJsonOf('obj', type)}');
   }
 
-  return '$name.${toJson.name!}(${args.join(', ')})';
+  return returns(
+    '$name.${toJson.name!}(${args.join(', ')})',
+    toJson.returnType,
+  );
 }

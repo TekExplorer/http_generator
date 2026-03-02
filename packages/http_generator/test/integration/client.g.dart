@@ -413,7 +413,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...?fields?.toJson()}),
+      body: EncodedFields.from({...?fields.toJson()}),
     );
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -426,7 +426,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...?fields?.toJson((obj) => obj)}),
+      body: EncodedFields.from({...?fields.toJson((obj) => obj)}),
     );
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -453,7 +453,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
         'f3': ?field3,
         'f4': ?field4,
         'f5': ?field5?.toJson(),
-        ...?grouped?.toJson(),
+        ...?grouped.toJson(),
         ...?rest,
       }),
     );
