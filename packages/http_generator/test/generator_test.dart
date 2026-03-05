@@ -1,3 +1,4 @@
+import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:http_generator/http_generator.dart';
 import 'package:test/test.dart';
@@ -17,7 +18,7 @@ import 'package:http_annotation/http_annotation.dart';
 import 'dart:convert';
 part 'a.g.dart';
 
-@RestClient('http://example.com')
+@RestClient(baseUrl: 'http://example.com')
 abstract class A with _$A {
   @Method('GET', '/response')
   Future<Response> getResponse();
@@ -43,15 +44,29 @@ class Data {
 }
 ''',
       },
-      outputs: {
-        'test_package|lib/a.http_client.g.part': decodedMatches(
-          predicate<String>((value) {
-            print(value);
-            return value.contains(r'mixin _$A') &&
-                value.contains("String get baseUrl => 'http://example.com';");
-          }),
-        ),
-      },
+      outputs: null,
+      flattenOutput: true,
+    );
+
+    // You can read all of the generated assets like this...
+    // for (final AssetId asset in result.outputs) {
+    //   print('reading generated asset: $asset');
+    //   print('  can read: ${await readerWriter.canRead(asset)}');
+    //   print('  exists: ${readerWriter.testing.exists(asset)}');
+    //   print('  content: \n${readerWriter.testing.readString(asset)}');
+    // }
+    final output = readerWriter.testing.readString(
+      AssetId.parse('test_package|lib/a.http_client.g.part'),
+    );
+    print(output);
+    expect(
+      output,
+      predicate<String>((value) {
+        return value.contains(r'mixin _$A') &&
+            value.contains(
+              "Uri get baseUrl => Uri.parse('http://example.com');",
+            );
+      }),
     );
   });
 }
