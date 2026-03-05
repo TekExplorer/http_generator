@@ -14,7 +14,9 @@ MapLiteral? createQuery(String uri, FunctionTypedElement function) {
 
   if (queryParameters.isEmpty && queryAllParameters.isEmpty) return null;
 
-  final mapLiteral = MapLiteral([.spread('$uri.queryParametersAll')]);
+  final mapLiteral = MapLiteral();
+
+  mapLiteral.addSpread('$uri.queryParametersAll');
 
   for (final param in queryAllParameters) {
     final paramName = param.element.name!;

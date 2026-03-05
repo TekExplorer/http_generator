@@ -171,7 +171,7 @@ class GenerateForMethod {
       headers.addAll(Coding.encodeToMapStringString(element));
     }
 
-    if (headers.entries.isEmpty && customHeaders.isEmpty) return null;
+    if (headers.isEmpty && customHeaders.isEmpty) return null;
 
     if (customHeaders.isNotEmpty) {
       // sort by original order
