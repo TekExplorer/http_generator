@@ -53,7 +53,7 @@ class Coding {
     );
   }
 
-  static Iterable<MapLiteralEntry> encodeToMapStringString(
+  static Iterable<CollectionEntry> encodeToMapStringString(
     FormalParameterElement element, {
     bool allowDynamic = false,
   }) {
@@ -113,7 +113,7 @@ class Coding {
 class MapStringStringEncoderVisitor
         //         A list of entries to be added to the map literal
         extends
-        TypeVisitorWithArgument<Iterable<MapLiteralEntry>, VariableElement> {
+        TypeVisitorWithArgument<Iterable<CollectionEntry>, VariableElement> {
   MapStringStringEncoderVisitor({this.allowDynamic = false});
   final bool allowDynamic;
 
@@ -179,10 +179,13 @@ class MapStringStringEncoderVisitor
     for (final field in type.namedFields) {
       final fieldName = field.name;
       if (field.type.isA(Checker.string) || allowDynamic) {
-        yield .kv(fieldName, '${element.name!}$q.$fieldName');
+        yield .mapEntry(fieldName, '${element.name!}$q.$fieldName');
       } else {
         final q2 = field.type.nullabilitySuffix == .question ? '?' : '';
-        yield .kv(fieldName, '${element.name!}$q.$fieldName$q2.toString()');
+        yield .mapEntry(
+          fieldName,
+          '${element.name!}$q.$fieldName$q2.toString()',
+        );
       }
     }
   }
