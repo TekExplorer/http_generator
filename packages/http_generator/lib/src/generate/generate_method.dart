@@ -1,14 +1,14 @@
 part of '../generator.dart';
 
 class GenerateForMethod {
-  GenerateForMethod(this.method, this.addMember);
+  GenerateForMethod(this.method, this.context);
   final MethodElement method;
 
-  final void Function(String method) addMember;
+  final GeneratorContext context;
 
   void build() {
     final impl = methodImpl();
-    if (impl != null) addMember(impl);
+    if (impl != null) context.classBuffer.add(impl);
   }
 
   @protected
@@ -66,12 +66,12 @@ class GenerateForMethod {
     final fragment = fragments.firstOrNull;
     final query = createQuery(r'$uri', method);
 
-    final body = RequestBody(method, methodReader, addMember);
+    final body = RequestBody(method, methodReader, context);
 
     return '''
   ${methodSignature(method)} async {
     ${[
-      'Uri \$uri = \$buildUrl(${modifyPath(path, method.formalParameters)});',
+      'Uri \$uri = #{{baseUrl}}.resolve(${modifyPath(path, method.formalParameters)});',
       if (query != null || fragment != null) ...[
         r'$uri = $uri.replace(', //
         if (query != null) 'queryParameters: $query,', //
@@ -122,7 +122,7 @@ class GenerateForMethod {
         yield 'return ${Coding.decodeResponse(r'$response', method)};';
       } catch (e) {
         final decodeMethodName = '_${method.name}Decode';
-        addMember('@#{{meta|protected}} #{{dart:async|FutureOr}}<${futureType.toCode()}> $decodeMethodName(#{{http|Response}} response);');
+        context.customMethodBuffer.add('@#{{meta|protected}} #{{dart:async|FutureOr}}<${futureType.toCode()}> $decodeMethodName(#{{http|Response}} response);');
         yield 'return $decodeMethodName(\$response);';
       }
     }().join('\n')}
@@ -198,7 +198,7 @@ class GenerateForMethod {
       );
 
       final methodName = '_${method.name}Headers';
-      addMember(
+      context.customMethodBuffer.add(
         '@#{{meta|protected}} Map<String, String> $methodName(${customHeaders.toCode()});',
       );
 

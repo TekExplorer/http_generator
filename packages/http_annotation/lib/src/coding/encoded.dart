@@ -179,10 +179,10 @@ final class EncodedMultipart implements Encoded, MultipartBuilder {
       files = {...?files};
 
   static Future<EncodedMultipart> build(
-    FutureOr<void> Function(EncodedMultipart) builder,
+    FutureOr<void> Function(MultipartBuilder builder) build,
   ) async {
     final multipart = EncodedMultipart();
-    await builder(multipart);
+    await build(multipart);
     return multipart;
   }
 

@@ -41,7 +41,8 @@ class JsonDecoderVisitor
         (c) => c.name == 'fromJson' || c.name == 'fromMap',
       );
       final fromJsonMethod =
-          type.getMethod('fromJson') ?? type.getMethod('fromMap');
+          type.lookUpMethod('fromJson', argument.library) ??
+          type.lookUpMethod('fromMap', argument.library);
 
       if (fromJsonConstructor == null &&
           (fromJsonMethod == null || !fromJsonMethod.isStatic)) {

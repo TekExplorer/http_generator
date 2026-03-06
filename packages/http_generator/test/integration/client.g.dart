@@ -12,20 +12,13 @@ part of 'client.dart';
 mixin _$NoBaseUrl implements NoBaseUrl {
   Uri get baseUrl;
 
-  Uri $buildUrl(String path) => baseUrl.resolve(path);
-
-  @protected
-  Map<String, String> _getResponseHeaders(
-    Fields fields, {
-    SpecialClass? specialHeader,
-  });
   Future<http.Response> getResponse(
     Map<String, String> headers,
     String? paramHeader,
     Fields fields, {
     SpecialClass? specialHeader,
   }) async {
-    Uri $uri = $buildUrl('/response');
+    Uri $uri = baseUrl.resolve('/response');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {
@@ -42,10 +35,8 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     return await $send($request).then(http.Response.fromStream);
   }
 
-  @protected
-  FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body);
   Future<http.StreamedResponse> updateThing(SpecialClass body) async {
-    Uri $uri = $buildUrl('/special');
+    Uri $uri = baseUrl.resolve('/special');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -57,12 +48,8 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     return await $send($request);
   }
 
-  @protected
-  FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body);
-  @protected
-  FutureOr<SpecialClass> _updateThing2Decode(http.Response response);
   Future<SpecialClass> updateThing2(SpecialClass body) async {
-    Uri $uri = $buildUrl('/special');
+    Uri $uri = baseUrl.resolve('/special');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -75,13 +62,6 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     return _updateThing2Decode($response);
   }
 
-  @protected
-  FutureOr<void> _multipartBuildMultipart(
-    MultipartBuilder $builder,
-    io.File fileIo,
-    Object unknown,
-  );
-
   Future<void> multipart(
     FilePart file,
     String name,
@@ -90,7 +70,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     io.File fileIo,
     Object unknown,
   ) async {
-    Uri $uri = $buildUrl('/multipart');
+    Uri $uri = baseUrl.resolve('/multipart');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -113,7 +93,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     Object? Function(T value) toJsonT,
     R Function(Object? json) fromJsonR,
   ) async {
-    Uri $uri = $buildUrl('/weird');
+    Uri $uri = baseUrl.resolve('/weird');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -127,7 +107,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<http.Response> getResponse2() async {
-    Uri $uri = $buildUrl('/response');
+    Uri $uri = baseUrl.resolve('/response');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -136,7 +116,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<Data> getThing() async {
-    Uri $uri = $buildUrl('/thing');
+    Uri $uri = baseUrl.resolve('/thing');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -146,7 +126,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<String> getRawThing() async {
-    Uri $uri = $buildUrl('/raw-thing');
+    Uri $uri = baseUrl.resolve('/raw-thing');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -156,7 +136,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<Gen<Data>> getGenericThing() async {
-    Uri $uri = $buildUrl('/generic-thing');
+    Uri $uri = baseUrl.resolve('/generic-thing');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -169,7 +149,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody(String body) async {
-    Uri $uri = $buildUrl('/body');
+    Uri $uri = baseUrl.resolve('/body');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -182,7 +162,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody2(Map<String, dynamic> body) async {
-    Uri $uri = $buildUrl('/body2');
+    Uri $uri = baseUrl.resolve('/body2');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -195,7 +175,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody3(Data body) async {
-    Uri $uri = $buildUrl('/body3');
+    Uri $uri = baseUrl.resolve('/body3');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -208,7 +188,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody4(Gen<Data> body) async {
-    Uri $uri = $buildUrl('/body4');
+    Uri $uri = baseUrl.resolve('/body4');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -223,7 +203,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody5(List<Data> body) async {
-    Uri $uri = $buildUrl('/body5');
+    Uri $uri = baseUrl.resolve('/body5');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -236,7 +216,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withBody6(String body) async {
-    Uri $uri = $buildUrl('/body6');
+    Uri $uri = baseUrl.resolve('/body6');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -249,7 +229,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<()> getRecord0() async {
-    Uri $uri = $buildUrl('/record0');
+    Uri $uri = baseUrl.resolve('/record0');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -259,7 +239,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<(int, String)> getRecord2() async {
-    Uri $uri = $buildUrl('/record2');
+    Uri $uri = baseUrl.resolve('/record2');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -272,7 +252,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<({int id, String name})> getRecordNamed() async {
-    Uri $uri = $buildUrl('/record_named');
+    Uri $uri = baseUrl.resolve('/record_named');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -285,7 +265,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withRecordNamedBody(({int id, String name}) body) async {
-    Uri $uri = $buildUrl('/record_named_body');
+    Uri $uri = baseUrl.resolve('/record_named_body');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -298,7 +278,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withRecord2Body((int, String) body) async {
-    Uri $uri = $buildUrl('/record2_body');
+    Uri $uri = baseUrl.resolve('/record2_body');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -314,7 +294,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     String search,
     Map<String, dynamic> filters,
   ) async {
-    Uri $uri = $buildUrl('/query');
+    Uri $uri = baseUrl.resolve('/query');
     $uri = $uri.replace(
       queryParameters: {...$uri.queryParametersAll, 'search': search},
     );
@@ -326,7 +306,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<http.Response> getWithPath(String id, String detailId) async {
-    Uri $uri = $buildUrl('/path/${id}/detail/${detailId}');
+    Uri $uri = baseUrl.resolve('/path/${id}/detail/${detailId}');
     final $request = await $createRequest('GET', $uri);
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -335,7 +315,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> cancelable(Future<void> abortTrigger) async {
-    Uri $uri = $buildUrl('/cancelable');
+    Uri $uri = baseUrl.resolve('/cancelable');
     final $request = await $createRequest(
       'GET',
       $uri,
@@ -354,7 +334,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     Gen<Map<String, Data>> body,
     Future<void> abortTrigger,
   ) async {
-    Uri $uri = $buildUrl('/everything/${id}');
+    Uri $uri = baseUrl.resolve('/everything/${id}');
     $uri = $uri.replace(
       queryParameters: {...$uri.queryParametersAll, 'search': search},
       fragment: fragment,
@@ -391,7 +371,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withFields(Map<String, String> fields) async {
-    Uri $uri = $buildUrl('/fields');
+    Uri $uri = baseUrl.resolve('/fields');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -404,7 +384,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withFields2(Fields fields) async {
-    Uri $uri = $buildUrl('/fields/object');
+    Uri $uri = baseUrl.resolve('/fields/object');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -417,7 +397,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<void> withFields3(GenFields<Stringy> fields) async {
-    Uri $uri = $buildUrl('/fields/generic');
+    Uri $uri = baseUrl.resolve('/fields/generic');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -438,7 +418,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
     Fields grouped,
     Map<String, String> rest,
   ) async {
-    Uri $uri = $buildUrl('/fields');
+    Uri $uri = baseUrl.resolve('/fields');
     final $request = await $createRequest(
       'POST',
       $uri,
@@ -459,7 +439,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<http.StreamedResponse> streamed(Stream<List<int>> body) async {
-    Uri $uri = $buildUrl('/stream');
+    Uri $uri = baseUrl.resolve('/stream');
     final $request = await $createRequest(
       'PUT',
       $uri,
@@ -472,7 +452,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<http.StreamedResponse> streamed2(Stream<Uint8List> body) async {
-    Uri $uri = $buildUrl('/stream');
+    Uri $uri = baseUrl.resolve('/stream');
     final $request = await $createRequest(
       'PUT',
       $uri,
@@ -485,7 +465,7 @@ mixin _$NoBaseUrl implements NoBaseUrl {
   }
 
   Future<http.StreamedResponse> streamed3(http.ByteStream body) async {
-    Uri $uri = $buildUrl('/stream');
+    Uri $uri = baseUrl.resolve('/stream');
     final $request = await $createRequest(
       'PUT',
       $uri,
@@ -496,4 +476,22 @@ mixin _$NoBaseUrl implements NoBaseUrl {
 
     return await $send($request);
   }
+
+  @protected
+  Map<String, String> _getResponseHeaders(
+    Fields fields, {
+    SpecialClass? specialHeader,
+  });
+  @protected
+  FutureOr<BodyEncoded> _updateThingEncode(SpecialClass body);
+  @protected
+  FutureOr<BodyEncoded> _updateThing2Encode(SpecialClass body);
+  @protected
+  FutureOr<SpecialClass> _updateThing2Decode(http.Response response);
+  @protected
+  FutureOr<void> _multipartBuildMultipart(
+    MultipartBuilder $builder,
+    io.File fileIo,
+    Object unknown,
+  );
 }

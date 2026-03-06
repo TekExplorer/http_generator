@@ -87,16 +87,20 @@ class HttpClientGenerator extends Generator {
       'send method is not defined in the context',
     );
 
-    context.classBuffer.addAll(buildMethods(element.methods));
+    context.args['baseUrl'] = (buffer) {
+      buffer.write('baseUrl');
+    };
+
+    buildMethods(element.methods, context);
 
     context.libraryBuffer.add('''
 ${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName ${implementSelf ? 'implements ${element.name}' : ''} {
 
-  Uri get baseUrl${baseUrl != null ? " => Uri.parse(${baseUrl.literal})" : ''};
-
-  Uri \$buildUrl(String path) => baseUrl.resolve(path);
+  Uri get #{{baseUrl}}${baseUrl != null ? " => Uri.parse(${baseUrl.literal})" : ''};
 
 ${context.classBuffer.join('\n')}
+
+${context.customMethodBuffer.join('\n')}
 }
 ''');
 
@@ -174,17 +178,10 @@ ${context.classBuffer.join('\n')}
         ''');
   }
 
-  List<String> buildMethods(List<MethodElement> methods) {
-    final generatedMethods = <String>[];
-
-    final builders = methods.map(
-      (method) => GenerateForMethod(method, generatedMethods.add),
-    );
-    for (final impl in builders) {
-      impl.build();
+  void buildMethods(List<MethodElement> methods, GeneratorContext context) {
+    for (final method in methods) {
+      GenerateForMethod(method, context).build();
     }
-
-    return generatedMethods;
   }
 }
 
@@ -203,6 +200,8 @@ class GeneratorContext {
 
   /// for adding things to the class/mixin level, e.g. fields, helper methods, etc.
   final classBuffer = <String>[];
+
+  final customMethodBuffer = <String>[];
 
   Map<String, void Function()> _$args(AnalyzerBuffer buffer) => {
     for (final entry in args.entries)

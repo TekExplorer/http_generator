@@ -1,20 +1,16 @@
 part of '../generator.dart';
 
 class RequestBody {
-  RequestBody(this.method, this.methodAnnotation, this.addMember);
+  RequestBody(this.method, this.methodAnnotation, this.context);
   final MethodElement method;
-
   final MethodAnnotation methodAnnotation;
+  final GeneratorContext context;
 
   bool get isMultipart {
     if (Checker.annotation('_Multipart').hasAnnotationOf(method)) return true;
     if (methodAnnotation.multipart == true) return true;
     return false;
   }
-
-  final void Function(String method) addMember;
-
-  static const encoded = '#{{http_annotation|BodyEncoded}}';
 
   @protected
   RequestType get _requestType {
@@ -47,6 +43,8 @@ class RequestBody {
   String? _buildMultipart() =>
       'await #{{http_annotation|EncodedMultipart}}.build(${_defineMultipartBuilder()})';
 
+  static const encoded = '#{{http_annotation|BodyEncoded}}';
+
   @protected
   // must return an Encoded
   String? _buildBody() {
@@ -66,12 +64,15 @@ class RequestBody {
     final type = param.element.type;
     final name = param.element.name!;
 
+    // short-circuit for already encoded bodies
+    if (type.isA(Checker.annotation('Encoded'))) return name;
+
     final bodyAnnotation = BodyAnnotation(param.annotation);
     final bodyType = bodyAnnotation.bodyType;
 
     String? buildCustom() {
       final methodName = '_${method.name}Encode';
-      addMember(
+      context.customMethodBuffer.add(
         '@#{{meta|protected}} #{{dart:async|FutureOr}}<$encoded> $methodName(${type.toCode()} $name);',
       );
       return 'await $methodName($name)';
@@ -153,8 +154,11 @@ class RequestBody {
         }
 
         if (type is InterfaceType) {
-          if (type.getMethod('toJson') != null) continue json;
-          if (type.getMethod('toMap') != null) continue json;
+          final toJson =
+              type.lookUpMethod('toJson', context.library) ??
+              type.lookUpMethod('toMap', context.library);
+
+          if (toJson != null) continue json;
         }
         // log.warning(
         //   [
@@ -255,7 +259,8 @@ class RequestBody {
         }
       } else if (paramType is InterfaceType) {
         final toMapMethod =
-            paramType.getMethod('toMap') ?? paramType.getMethod('toJson');
+            paramType.lookUpMethod('toMap', context.library) ??
+            paramType.lookUpMethod('toJson', context.library);
 
         if (toMapMethod == null) {
           throw InvalidGenerationSourceError(
@@ -299,7 +304,7 @@ class RequestBody {
     if (customParameters.isNotEmpty) {
       final methodName = '_${method.name}BuildMultipart';
 
-      addMember('''
+      context.customMethodBuffer.add('''
 @#{{meta|protected}} #{{dart:async|FutureOr}}<void> $methodName(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()});
 ''');
       lines.add(
@@ -349,7 +354,7 @@ class RequestBody {
 
     if (customFields.isNotEmpty) {
       final methodName = '_${method.name}EncodeFields';
-      addMember(
+      context.customMethodBuffer.add(
         '@#{{meta|protected}} #{{dart:async|FutureOr}}<Map<String, String>> $methodName(${customFields.toCode()});',
       );
       map.addSpread('$methodName(${customFields.toCallCode()})');
