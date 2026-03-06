@@ -8,7 +8,6 @@ class RestClient {
   const RestClient({
     this.baseUrl,
     this.mixinName,
-    this.mixinClass,
     this.implementSelf,
     this.renameSend,
     this.autoSelectClient,
@@ -16,7 +15,6 @@ class RestClient {
 
   final String? baseUrl;
   final String? mixinName;
-  final bool? mixinClass;
   final bool? implementSelf;
   final String? renameSend;
   final bool? autoSelectClient;

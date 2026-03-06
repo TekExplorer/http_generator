@@ -9,7 +9,7 @@ part of 'client.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-mixin _$NoBaseUrl implements NoBaseUrl {
+abstract mixin class _$NoBaseUrl implements NoBaseUrl {
   Uri get baseUrl;
 
   Future<http.Response> getResponse(

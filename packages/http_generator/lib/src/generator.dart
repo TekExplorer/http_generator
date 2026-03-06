@@ -31,7 +31,6 @@ extension type RestClientAnnotation(ConstantReader reader)
     implements ConstantReader {
   String? get baseUrl => read('baseUrl').nullOr?.stringValue;
   String? get mixinName => read('mixinName').nullOr?.stringValue;
-  bool? get mixinClass => read('mixinClass').nullOr?.boolValue;
   bool? get implementSelf => read('implementSelf').nullOr?.boolValue;
   String? get renameSend => read('renameSend').nullOr?.stringValue;
   bool? get autoSelectClient => read('autoSelectClient').nullOr?.boolValue;
@@ -77,7 +76,6 @@ class HttpClientGenerator extends Generator {
 
     final baseUrl = annotation.baseUrl;
     final mixinName = annotation.mixinName ?? '_\$${element.name!}';
-    final mixinClass = annotation.mixinClass == true;
     final implementSelf = annotation.implementSelf == true;
 
     writeSend(element, context);
@@ -94,7 +92,7 @@ class HttpClientGenerator extends Generator {
     buildMethods(element.methods, context);
 
     context.libraryBuffer.add('''
-${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName ${implementSelf ? 'implements ${element.name}' : ''} {
+abstract mixin class $mixinName ${implementSelf ? 'implements ${element.name}' : ''} {
 
   Uri get #{{baseUrl}}${baseUrl != null ? " => Uri.parse(${baseUrl.literal})" : ''};
 
