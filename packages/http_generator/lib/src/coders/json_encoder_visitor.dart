@@ -112,13 +112,15 @@ class JsonEncoderVisitor
     }
 
     if (type.namedFields.isNotEmpty) {
-      final buffer = <String>[];
+      final map = MapLiteral();
+
       for (final field in type.namedFields) {
-        buffer.add(
-          '${field.name.literal}: ${nest(field.type, '$varName.${field.name}', argument)}',
+        map.add(
+          field.name,
+          nest(field.type, '$varName.${field.name}', argument),
         );
       }
-      return '{${buffer.join(', ')}}';
+      return map.toString();
     }
 
     throw InvalidGenerationSourceError(

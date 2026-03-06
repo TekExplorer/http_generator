@@ -2,21 +2,22 @@
 
 // sealed class Literal {}
 
+import 'package:meta/meta.dart';
 import 'package:source_helper/source_helper.dart';
 
 extension StringLiteralExt on String {
   String get literal => escapeDartString(this);
 }
 
-sealed class CollectionLiteral {
-  CollectionLiteral({this.nullAware = true});
-  final bool nullAware;
+sealed class _CollectionLiteral {
+  _CollectionLiteral({this.nullAware});
+  final bool? nullAware;
 
   final elements = <CollectionEntry>[];
   bool get isEmpty => elements.isEmpty;
   bool get isNotEmpty => elements.isNotEmpty;
 
-  void addLiteral(CollectionLiteral literal) => addAll(literal.elements);
+  void addLiteral(_CollectionLiteral literal) => addAll(literal.elements);
 
   void addAll(Iterable<CollectionEntry> newElements) =>
       elements.addAll(newElements);
@@ -30,7 +31,11 @@ sealed class CollectionLiteral {
   @override
   String toString() {
     final elements = this.elements.map(
-      (e) => nullAware ? e.nullAware : e.nullUnaware,
+      (e) => switch (nullAware) {
+        true => e.nullAware,
+        false => e.nullUnaware,
+        null => e,
+      },
     );
 
     final (l, r) = _delimiters;
@@ -54,14 +59,16 @@ sealed class CollectionLiteral {
 
 // final class SetLiteral extends IterableLiteral {}
 
-final class MapLiteral extends CollectionLiteral {
+final class MapLiteral extends _CollectionLiteral {
+  MapLiteral({super.nullAware});
+
   void add(String key, String expression) =>
       addEntry(.mapEntry(key, expression));
 }
 
 abstract final class CollectionEntry {
   factory CollectionEntry.spread(String expression) = _CollectionEntrySpread;
-  factory CollectionEntry.element(String expression) = _CollectionEntryElement;
+  // factory CollectionEntry.element(String expression) = _CollectionEntryElement;
   factory CollectionEntry.mapEntry(String key, String expression) =
       _CollectionMapEntry;
 
@@ -71,27 +78,8 @@ abstract final class CollectionEntry {
   CollectionEntry get nullUnaware;
 
   @override
+  @mustBeOverridden
   String toString();
-}
-
-final class _CollectionEntryElement implements CollectionEntry {
-  @override
-  final String expression;
-
-  _CollectionEntryElement(this.expression);
-
-  @override
-  String toString() => expression;
-
-  @override
-  _CollectionEntryElement get nullAware => .new('?${nullUnaware.expression}');
-
-  @override
-  _CollectionEntryElement get nullUnaware {
-    final expression = this.expression.trim();
-    if (expression.startsWith('?')) return .new(expression.substring(1));
-    return .new(expression);
-  }
 }
 
 final class _CollectionEntrySpread implements CollectionEntry {
@@ -114,7 +102,7 @@ final class _CollectionEntrySpread implements CollectionEntry {
   }
 }
 
-final class _CollectionMapEntry implements _CollectionEntryElement {
+final class _CollectionMapEntry implements CollectionEntry {
   final String key;
 
   final String value;
@@ -125,7 +113,7 @@ final class _CollectionMapEntry implements _CollectionEntryElement {
   _CollectionMapEntry(this.key, this.value);
 
   @override
-  String toString() => '$key: $expression';
+  String toString() => expression;
 
   @override
   _CollectionMapEntry get nullAware => .new(key, '?${nullUnaware.expression}');

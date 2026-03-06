@@ -10,12 +10,16 @@ class RestClient {
     this.mixinName,
     this.mixinClass,
     this.implementSelf,
+    this.renameSend,
+    this.autoSelectClient,
   });
 
   final String? baseUrl;
   final String? mixinName;
   final bool? mixinClass;
   final bool? implementSelf;
+  final String? renameSend;
+  final bool? autoSelectClient;
 }
 
 const custom = Custom();

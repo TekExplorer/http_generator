@@ -48,6 +48,8 @@ extension Checker on TypeChecker {
 
   static final cancelToken = from('dio#CancelToken');
 
+  static final client = from('http#Client');
+
   static final response = from('http#Response');
   static final streamedResponse = from('http#StreamedResponse');
 

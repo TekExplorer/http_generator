@@ -30,25 +30,39 @@ class GenerateForMethod {
 
     final futureType = returnType.typeArgumentsOf(Checker.future)!.single;
 
-    if (futureType is! InterfaceType &&
-        futureType is! RecordType &&
-        futureType is! DynamicType &&
-        futureType is! VoidType &&
-        futureType is! TypeParameterType) {
-      throw InvalidGenerationSourceError(
-        'Return type of `${method.name}` must be a Future<void|dynamic|interface|record>. Found Future<$futureType>',
-        element: method,
-      );
+    switch (futureType.sealed) {
+      case NeverTy():
+        throw InvalidGenerationSourceError(
+          'Return type of `${method.name}` cannot be Future<Never>.',
+          element: method,
+        );
+      case InvalidTy():
+        throw InvalidGenerationSourceError(
+          'Return type of `${method.name}` is invalid.',
+          element: method,
+        );
+      case FunctionTy():
+        throw InvalidGenerationSourceError(
+          'Return type of `${method.name}` cannot be a function.',
+          element: method,
+        );
+      case InterfaceTy():
+      case RecordTy():
+      case DynamicTy():
+      case VoidTy():
+      case TypeParameterTy():
+      // good
     }
 
     final fragments = Checker.fragment.annotatedOf(method.formalParameters);
-    if (fragments.isNotEmpty && fragments.length > 1) {
+    if (fragments.length > 1) {
       throw InvalidGenerationSourceError(
         'Method `${method.name}` has multiple parameters annotated with `@Fragment`. '
         'Only one `@Fragment` parameter is allowed per method.',
         element: method,
       );
     }
+
     final fragment = fragments.firstOrNull;
     final query = createQuery(r'$uri', method);
 
@@ -80,29 +94,29 @@ class GenerateForMethod {
     
     ${() sync* {
       if (Checker.streamedResponse.isExactlyType(futureType)) {
-        yield r'return await $send($request);';
+        yield r'return await #{{send}}($request);';
         return;
       }
 
       if (futureType is VoidType) {
         // wait for the stream to complete. configurable?
-        yield r'await $send($request).then(#{{http|Response}}.fromStream);';
+        yield r'await #{{send}}($request).then(#{{http|Response}}.fromStream);';
         return;
       }
 
       if (futureType.isA(Checker.response)) {
-        yield r'return await $send($request).then(#{{http|Response}}.fromStream);';
+        yield r'return await #{{send}}($request).then(#{{http|Response}}.fromStream);';
         return;
       }
 
       //TODO: figure out how to support direct stream returns
       if (Checker.stream.isExactlyType(futureType)) {
-        yield r'final $response = await $send($request);';
+        yield r'final $response = await #{{send}}($request);';
         yield r'return $response.stream;';
         return;
       }
 
-      yield r'final $response = await $send($request).then(#{{http|Response}}.fromStream);';
+      yield r'final $response = await #{{send}}($request).then(#{{http|Response}}.fromStream);';
 
       try {
         yield 'return ${Coding.decodeResponse(r'$response', method)};';
@@ -157,7 +171,8 @@ class GenerateForMethod {
         continue;
       }
       final key = annotation.read('key').nullOr?.stringValue ?? element.name!;
-      headers.add(key, element.name!);
+      final q = element.type.nullabilitySuffix == .question ? '?' : '';
+      headers.add(key, '$q${element.name!}');
     }
 
     for (final (annotation: _, :element) in Checker.headers.annotatedOf(

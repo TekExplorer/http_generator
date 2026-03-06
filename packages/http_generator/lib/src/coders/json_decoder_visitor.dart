@@ -98,7 +98,7 @@ class JsonDecoderVisitor
       );
     }
     for (final field in type.namedFields) {
-      final fieldName = '\$map[${field.name.literal}]]';
+      final fieldName = '\$map[${field.name.literal}]';
       buffer.write('${field.name}: ${nest(field.type, fieldName, argument)}, ');
     }
 

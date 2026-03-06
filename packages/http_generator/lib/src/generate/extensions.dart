@@ -146,6 +146,25 @@ extension NonNullMap<V extends Object, K extends Object> on Map<K?, V?> {
 
 extension DartTypeIsA on DartType {
   // bool isA(TypeChecker typeChecker) => typeChecker.isAssignableFromType(this);
+  bool isExactly(
+    TypeChecker typeChecker, [
+    Iterable<TypeChecker?> typeArgumentCheckers = const [],
+  ]) {
+    if (!typeChecker.isExactlyType(this)) return false;
+
+    final typeArguments = typeArgumentsOf(typeChecker);
+    if (typeArguments == null) return true;
+
+    if (typeArgumentCheckers.length > typeArguments.length) return false;
+    for (var i = 0; i < typeArgumentCheckers.length; i++) {
+      final arg = typeArguments.elementAt(i);
+      final checker = typeArgumentCheckers.elementAt(i);
+      if (checker == null) continue;
+      if (!arg.isExactly(checker)) return false;
+    }
+    return true;
+  }
+
   bool isA(
     TypeChecker typeChecker, [
     Iterable<TypeChecker?>? typeArgumentCheckers,

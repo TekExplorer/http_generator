@@ -9,12 +9,7 @@ part of 'client.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
-  @protected
-  Future<http.StreamedResponse> $send(http.BaseRequest request) {
-    return request.send();
-  }
-
+mixin _$NoBaseUrl implements NoBaseUrl {
   Uri get baseUrl;
 
   Uri $buildUrl(String path) => baseUrl.resolve(path);
@@ -40,8 +35,8 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     });
     $request.headers.addAll({
       'x-param-header': ?paramHeader,
-      ...?headers,
-      ...?_getResponseHeaders(fields, specialHeader: specialHeader),
+      ...headers,
+      ..._getResponseHeaders(fields, specialHeader: specialHeader),
     });
 
     return await $send($request).then(http.Response.fromStream);
@@ -321,7 +316,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
   ) async {
     Uri $uri = $buildUrl('/query');
     $uri = $uri.replace(
-      queryParameters: {...?$uri.queryParametersAll, 'search': ?search},
+      queryParameters: {...$uri.queryParametersAll, 'search': search},
     );
     final $request = await $createRequest('GET', $uri);
 
@@ -361,7 +356,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
   ) async {
     Uri $uri = $buildUrl('/everything/${id}');
     $uri = $uri.replace(
-      queryParameters: {...?$uri.queryParametersAll, 'search': ?search},
+      queryParameters: {...$uri.queryParametersAll, 'search': search},
       fragment: fragment,
     );
     final $request = await $createRequest(
@@ -400,7 +395,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...?fields}),
+      body: EncodedFields.from({...fields}),
     );
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -413,7 +408,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...?fields.toJson()}),
+      body: EncodedFields.from({...fields.toJson()}),
     );
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -426,7 +421,7 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
     final $request = await $createRequest(
       'POST',
       $uri,
-      body: EncodedFields.from({...?fields.toJson((obj) => obj)}),
+      body: EncodedFields.from({...fields.toJson((obj) => obj)}),
     );
 
     $request.headers.addAll(const {'x-class-header': 'class-header-value'});
@@ -448,13 +443,13 @@ mixin _$NoBaseUrl implements $GeneratedClient, NoBaseUrl {
       'POST',
       $uri,
       body: EncodedFields.from({
-        'f1': ?field1,
-        'f2': ?field2,
-        'f3': ?field3,
-        'f4': ?field4,
-        'f5': ?field5?.toJson(),
-        ...?grouped.toJson(),
-        ...?rest,
+        'f1': field1,
+        'f2': field2,
+        'f3': field3,
+        'f4': field4,
+        'f5': field5?.toJson(),
+        ...grouped.toJson(),
+        ...rest,
       }),
     );
 
