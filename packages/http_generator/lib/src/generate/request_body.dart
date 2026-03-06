@@ -71,11 +71,13 @@ class RequestBody {
     final bodyType = bodyAnnotation.bodyType;
 
     String? buildCustom() {
-      final methodName = '_${method.name}Encode';
-      context.customMethodBuffer.add(
-        '@#{{meta|protected}} #{{dart:async|FutureOr}}<$encoded> $methodName(${type.toCode()} $name);',
+      final methodName = '${method.name}Encode';
+      context.requestMethod(
+        '#{{dart:async|FutureOr}}<$encoded>',
+        methodName,
+        '(${type.toCode()} $name)',
       );
-      return 'await $methodName($name)';
+      return 'await #{{extra}}$methodName($name)';
     }
 
     if (Checker.custom.hasAnnotationOf(param.element)) return buildCustom();
@@ -302,13 +304,15 @@ class RequestBody {
     }
 
     if (customParameters.isNotEmpty) {
-      final methodName = '_${method.name}BuildMultipart';
+      final methodName = '${method.name}BuildMultipart';
 
-      context.customMethodBuffer.add('''
-@#{{meta|protected}} #{{dart:async|FutureOr}}<void> $methodName(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()});
-''');
+      context.requestMethod(
+        '#{{dart:async|FutureOr}}<void>',
+        methodName,
+        '(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()})',
+      );
       lines.add(
-        'await $methodName($request, ${customParameters.toCallCode()});',
+        'await #{{extra}}$methodName($request, ${customParameters.toCallCode()});',
       );
     }
 
@@ -353,11 +357,14 @@ class RequestBody {
     }
 
     if (customFields.isNotEmpty) {
-      final methodName = '_${method.name}EncodeFields';
-      context.customMethodBuffer.add(
-        '@#{{meta|protected}} #{{dart:async|FutureOr}}<Map<String, String>> $methodName(${customFields.toCode()});',
+      final methodName = '${method.name}EncodeFields';
+      context.requestMethod(
+        '#{{dart:async|FutureOr}}<Map<String, String>>',
+        methodName,
+        '(${customFields.toCode()})',
       );
-      map.addSpread('$methodName(${customFields.toCallCode()})');
+
+      map.addSpread('#{{extra}}$methodName(${customFields.toCallCode()})');
     }
 
     return map;

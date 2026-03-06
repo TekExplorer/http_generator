@@ -29,7 +29,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     $request.headers.addAll({
       'x-param-header': ?paramHeader,
       ...headers,
-      ..._getResponseHeaders(fields, specialHeader: specialHeader),
+      ...await _getResponseHeaders(fields, specialHeader: specialHeader),
     });
 
     return await $send($request).then(http.Response.fromStream);
@@ -478,7 +478,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
   }
 
   @protected
-  Map<String, String> _getResponseHeaders(
+  FutureOr<Map<String, String>> _getResponseHeaders(
     Fields fields, {
     SpecialClass? specialHeader,
   });

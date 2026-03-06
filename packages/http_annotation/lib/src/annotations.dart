@@ -8,16 +8,23 @@ class RestClient {
   const RestClient({
     this.baseUrl,
     this.mixinName,
-    this.implementSelf,
+    this.implementSelf = false,
     this.renameSend,
-    this.autoSelectClient,
+    this.autoSelectClient = true,
+    this.inlineExtraMethods = true,
   });
 
   final String? baseUrl;
   final String? mixinName;
-  final bool? implementSelf;
+  final bool implementSelf;
   final String? renameSend;
-  final bool? autoSelectClient;
+  final bool autoSelectClient;
+
+  /// If true, generated code will include all extra encode/decode methods
+  /// in the generated type outright.
+  ///
+  /// If not, a single getter will be generated which will require a generated to be provided
+  final bool inlineExtraMethods;
 }
 
 const custom = Custom();

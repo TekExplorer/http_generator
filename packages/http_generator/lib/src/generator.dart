@@ -31,9 +31,10 @@ extension type RestClientAnnotation(ConstantReader reader)
     implements ConstantReader {
   String? get baseUrl => read('baseUrl').nullOr?.stringValue;
   String? get mixinName => read('mixinName').nullOr?.stringValue;
-  bool? get implementSelf => read('implementSelf').nullOr?.boolValue;
+  bool get implementSelf => read('implementSelf').boolValue;
   String? get renameSend => read('renameSend').nullOr?.stringValue;
-  bool? get autoSelectClient => read('autoSelectClient').nullOr?.boolValue;
+  bool get autoSelectClient => read('autoSelectClient').boolValue;
+  bool get inlineExtraMethods => read('inlineExtraMethods').boolValue;
 }
 
 class HttpClientGenerator extends Generator {
@@ -85,20 +86,51 @@ class HttpClientGenerator extends Generator {
       'send method is not defined in the context',
     );
 
-    context.args['baseUrl'] = (buffer) {
-      buffer.write('baseUrl');
-    };
+    context.args['baseUrl'] = (buffer) => buffer.write('baseUrl');
 
     buildMethods(element.methods, context);
+
+    if (context.additionalMethods.isNotEmpty) {
+      if (annotation.inlineExtraMethods) {
+        context.args['extra'] = (buffer) => buffer.write('_');
+
+        context.members.addAll(
+          context.additionalMethods.map((e) {
+            final (returnType, name, parameters) = e;
+            if (parameters != null) {
+              return '@#{{meta|protected}} $returnType _$name$parameters;';
+            } else {
+              return '@#{{meta|protected}} $returnType get _$name;';
+            }
+          }),
+        );
+      } else {
+        context.args['extra'] = (buffer) => buffer.write('_extra.');
+
+        final extraClassName = '_\$${element.name}Extra';
+        context.members.add('@#{{meta|protected}} $extraClassName get _extra;');
+        final methods = context.additionalMethods.map((e) {
+          final (returnType, name, parameters) = e;
+          if (parameters != null) {
+            return '$returnType $name$parameters;';
+          } else {
+            return '$returnType get $name;';
+          }
+        });
+        context.libraryBuffer.add('''
+abstract class $extraClassName {
+${methods.join('\n')}
+}
+''');
+      }
+    }
 
     context.libraryBuffer.add('''
 abstract mixin class $mixinName ${implementSelf ? 'implements ${element.name}' : ''} {
 
   Uri get #{{baseUrl}}${baseUrl != null ? " => Uri.parse(${baseUrl.literal})" : ''};
 
-${context.classBuffer.join('\n')}
-
-${context.customMethodBuffer.join('\n')}
+${context.members.join('\n')}
 }
 ''');
 
@@ -168,7 +200,7 @@ ${context.customMethodBuffer.join('\n')}
     }
 
     context.args['send'] = (buffer) => buffer.write(sendName);
-    context.classBuffer.add('''
+    context.members.add('''
           @#{{meta|protected}}
           Future<#{{http|StreamedResponse}}> $sendName(#{{http|BaseRequest}} request) {
             return request.send();
@@ -197,9 +229,15 @@ class GeneratorContext {
   final libraryBuffer = <String>[];
 
   /// for adding things to the class/mixin level, e.g. fields, helper methods, etc.
-  final classBuffer = <String>[];
+  final members = <String>[];
 
-  final customMethodBuffer = <String>[];
+  final additionalMethods =
+      <(String returnType, String name, String? parameters)>[];
+
+  /// Not specifying [parameters] will make it a getter
+  void requestMethod(String returnType, String name, [String? parameters]) {
+    additionalMethods.add((returnType, name, parameters));
+  }
 
   Map<String, void Function()> _$args(AnalyzerBuffer buffer) => {
     for (final entry in args.entries)

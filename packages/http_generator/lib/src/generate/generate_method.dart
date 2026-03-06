@@ -8,7 +8,7 @@ class GenerateForMethod {
 
   void build() {
     final impl = methodImpl();
-    if (impl != null) context.classBuffer.add(impl);
+    if (impl != null) context.members.add(impl);
   }
 
   @protected
@@ -121,9 +121,9 @@ class GenerateForMethod {
       try {
         yield 'return ${Coding.decodeResponse(r'$response', method)};';
       } catch (e) {
-        final decodeMethodName = '_${method.name}Decode';
-        context.customMethodBuffer.add('@#{{meta|protected}} #{{dart:async|FutureOr}}<${futureType.toCode()}> $decodeMethodName(#{{http|Response}} response);');
-        yield 'return $decodeMethodName(\$response);';
+        final decodeMethodName = '${method.name}Decode';
+        context.requestMethod('#{{dart:async|FutureOr}}<${futureType.toCode()}>', decodeMethodName, '(#{{http|Response}} response)');
+        yield 'return #{{extra}}$decodeMethodName(\$response);';
       }
     }().join('\n')}
   }
@@ -197,16 +197,18 @@ class GenerateForMethod {
             .compareTo(method.formalParameters.indexOf(b)),
       );
 
-      final methodName = '_${method.name}Headers';
-      context.customMethodBuffer.add(
-        '@#{{meta|protected}} Map<String, String> $methodName(${customHeaders.toCode()});',
+      final methodName = '${method.name}Headers';
+      context.requestMethod(
+        '#{{dart:async|FutureOr}}<Map<String, String>>',
+        methodName,
+        '(${customHeaders.toCode()})',
       );
 
       final call = customHeaders.map(
         (e) => e.isNamed ? '${e.name}: ${e.name}' : e.name!,
       );
 
-      headers.addSpread('$methodName(${call.join(', ')})');
+      headers.addSpread('await #{{extra}}$methodName(${call.join(', ')})');
     }
 
     return headers;
