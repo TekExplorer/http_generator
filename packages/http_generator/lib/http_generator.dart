@@ -18,7 +18,7 @@ Builder httpClientBuilder([BuilderOptions options = BuilderOptions.empty]) =>
         try {
           return DartFormatter(languageVersion: languageVersion).format(code);
         } catch (e) {
-          print(e);
+          log.warning(e);
           return code;
         }
       },

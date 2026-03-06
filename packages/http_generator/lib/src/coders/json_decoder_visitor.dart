@@ -92,10 +92,7 @@ class JsonDecoderVisitor
     }
     final buffer = StringBuffer();
     for (final (index, field) in type.positionalFields.indexed) {
-      buffer.write(
-        // TODO: index may need adjusting by 1
-        '${nest(field.type, '\$map[$index]', argument)}, ',
-      );
+      buffer.write('${nest(field.type, '\$map[$index]', argument)}, ');
     }
     for (final field in type.namedFields) {
       final fieldName = '\$map[${field.name.literal}]';

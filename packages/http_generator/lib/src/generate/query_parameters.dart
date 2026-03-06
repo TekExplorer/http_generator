@@ -70,7 +70,8 @@ MapLiteral? createQuery(String uri, FunctionTypedElement function) {
         param.element.library!,
         function.formalParameters,
       );
-      mapLiteral.add(queryKey, '$paramName?.map((e) => $encode)');
+      final q = elementType.nullabilitySuffix == .question ? '?' : '';
+      mapLiteral.add(queryKey, '$paramName$q.map((e) => $encode)');
     } else {
       mapLiteral.add(queryKey, Coding.encodeToString(param.element));
     }
