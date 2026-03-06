@@ -64,7 +64,7 @@ ${mixinClass ? 'abstract mixin class' : 'mixin'} $mixinName implements #{{http_a
     return request.send();
   }
   
-  Uri get baseUrl${baseUrl != null ? " => Uri.parse(${escapeDartString(baseUrl)})" : ''};
+  Uri get baseUrl${baseUrl != null ? " => Uri.parse(${baseUrl.literal})" : ''};
 
   Uri \$buildUrl(String path) => baseUrl.resolve(path);
 

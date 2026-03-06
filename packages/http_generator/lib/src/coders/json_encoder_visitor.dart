@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/dart/element/type_visitor.dart';
+import 'package:http_generator/src/generate/map_literal.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
 
@@ -114,7 +115,7 @@ class JsonEncoderVisitor
       final buffer = <String>[];
       for (final field in type.namedFields) {
         buffer.add(
-          '${escapeDartString(field.name)}: ${nest(field.type, '$varName.${field.name}', argument)}',
+          '${field.name.literal}: ${nest(field.type, '$varName.${field.name}', argument)}',
         );
       }
       return '{${buffer.join(', ')}}';

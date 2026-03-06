@@ -8,9 +8,7 @@ String modifyPath(String path, List<FormalParameterElement> formalParameters) {
       annotation.value ?? element.name!: element.name!,
   };
 
-  return escapeDartString(path).replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (
-    match,
-  ) {
+  return path.literal.replaceAllMapped(RegExp(r'\{([^\}]+)\}'), (match) {
     final key = match.group(1)!;
     final name = map[key];
     if (name == null) return match.group(0)!;

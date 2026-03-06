@@ -3,8 +3,8 @@ import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:analyzer_buffer/analyzer_buffer.dart' show CodeFor2;
 import 'package:collection/collection.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:source_helper/source_helper.dart';
 
+import '../generate/map_literal.dart';
 import 'coder_shared.dart';
 
 class JsonDecoderVisitor
@@ -98,7 +98,7 @@ class JsonDecoderVisitor
       );
     }
     for (final field in type.namedFields) {
-      final fieldName = '\$map[${escapeDartString(field.name)}]';
+      final fieldName = '\$map[${field.name.literal}]]';
       buffer.write('${field.name}: ${nest(field.type, fieldName, argument)}, ');
     }
 

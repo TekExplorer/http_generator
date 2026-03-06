@@ -188,10 +188,12 @@ class RequestBody {
       if (useCustom) {
         customParameters.add(param.element);
         continue;
-      } else if (paramType.isA(Checker.string)) {
-        lines.add(
-          '$request.fields[${escapeDartString(fieldName)}] = $paramName;',
-        );
+      }
+
+      final fieldNameLiteral = fieldName.literal;
+
+      if (paramType.isA(Checker.string)) {
+        lines.add('$request.fields[$fieldNameLiteral] = $paramName;');
       } else if (paramType.isA(
         .any([
           // .fromUrl('dart:io#File'),
@@ -201,15 +203,13 @@ class RequestBody {
       )) {
         final q = paramType.nullabilitySuffix == .question ? '?' : '';
         lines.add(
-          '$request.fields[${escapeDartString(fieldName)}] = $paramName$q.toString();',
+          '$request.fields[$fieldNameLiteral] = $paramName$q.toString();',
         );
       } else if (paramType.isA(Checker.filePart)) {
-        lines.add(
-          '$request.files[${escapeDartString(fieldName)}] = $paramName;',
-        );
+        lines.add('$request.files[$fieldNameLiteral] = $paramName;');
       } else if (paramType.isA(Checker.from('http#MultipartFile'))) {
         lines.add(
-          '$request.files[${escapeDartString(fieldName)}] = .fromMultipartFile($paramName);',
+          '$request.files[$fieldNameLiteral] = .fromMultipartFile($paramName);',
         );
       } else {
         log.warning(
@@ -344,7 +344,7 @@ class RequestBody {
         customFields.add(param.element);
         continue;
       }
-      map.addAll(Coding.encodeToMapStringString(param.element));
+      map.addLiteral(Coding.encodeToMapStringString(param.element));
     }
 
     if (customFields.isNotEmpty) {

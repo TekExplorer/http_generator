@@ -66,7 +66,7 @@ class GenerateForMethod {
       ],
     ].join('\n')}
     final \$request = await #{{http_annotation|\$createRequest}}(${[
-      escapeDartString(httpMethod),
+      httpMethod.literal,
       '\$uri',
       if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger', //
       if (body.buildEncoded() case final body?) 'body: $body', //
@@ -168,7 +168,7 @@ class GenerateForMethod {
         customHeaders.add(element);
         continue;
       }
-      headers.addAll(Coding.encodeToMapStringString(element));
+      headers.addLiteral(Coding.encodeToMapStringString(element));
     }
 
     if (headers.isEmpty && customHeaders.isEmpty) return null;

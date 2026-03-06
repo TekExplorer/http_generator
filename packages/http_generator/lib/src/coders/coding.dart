@@ -53,18 +53,19 @@ class Coding {
     );
   }
 
-  static Iterable<CollectionEntry> encodeToMapStringString(
+  static MapLiteral encodeToMapStringString(
     FormalParameterElement element, {
     bool allowDynamic = false,
   }) {
     final jsonConverter = Checker.jsonConverter.firstAnnotationOf(element);
     if (jsonConverter != null) {
-      return [.spread('${jsonConverter.toCode()}.toJson(${element.name!})')];
+      return MapLiteral()
+        ..addSpread('${jsonConverter.toCode()}.toJson(${element.name!})');
     }
     final type = element.type;
 
     if (type.isA(Checker.map, [Checker.string, Checker.string])) {
-      return [.spread(element.name!)];
+      return MapLiteral()..addSpread(element.name!);
     }
 
     return type.acceptWithArgument(
@@ -113,12 +114,14 @@ class Coding {
 class MapStringStringEncoderVisitor
         //         A list of entries to be added to the map literal
         extends
-        TypeVisitorWithArgument<Iterable<CollectionEntry>, VariableElement> {
+        TypeVisitorWithArgument<MapLiteral, VariableElement> {
   MapStringStringEncoderVisitor({this.allowDynamic = false});
   final bool allowDynamic;
 
   @override
-  visitInterfaceType(InterfaceType type, element) sync* {
+  visitInterfaceType(InterfaceType type, element) {
+    final map = MapLiteral();
+
     final q = type.nullabilitySuffix == .question ? '?' : '';
     // Check for toJson or toMap method that returns Map<String, String>
     final encode = type.allMethods.where(
@@ -140,24 +143,24 @@ class MapStringStringEncoderVisitor
       final arguments = args.join(', ');
 
       if (m.returnType.isA(Checker.map, [Checker.string, Checker.string])) {
-        yield .spread('${element.name!}$q.${m.name}($arguments)');
-        return;
+        map.addSpread('${element.name!}$q.${m.name}($arguments)');
+        return map;
       }
 
       if (m.returnType.isA(Checker.map, [Checker.string, null])) {
         final [_, valueType] = m.returnType.typeArgumentsOf(Checker.map)!;
 
         if (valueType.isA(Checker.string) || allowDynamic) {
-          yield .spread('${element.name!}$q.${m.name}($arguments)');
-          return;
+          map.addSpread('${element.name!}$q.${m.name}($arguments)');
+          return map;
         }
 
         final q2 = m.returnType.nullabilitySuffix == .question ? '?' : '';
-        yield .spread(
+        map.addSpread(
           '${element.name!}$q.${m.name}($arguments)$q2'
           '.map((k, v) => MapEntry(k, ${Coding.encodeTypeToString(valueType, 'v', element.library!, [])}))',
         );
-        return;
+        return map;
       }
     }
 
@@ -168,26 +171,28 @@ class MapStringStringEncoderVisitor
   }
 
   @override
-  visitRecordType(RecordType type, element) sync* {
+  visitRecordType(RecordType type, element) {
     if (type.positionalFields.isNotEmpty) {
       throw InvalidGenerationSourceError(
         'Records with positional fields cannot be converted to `Map<String, String>`. Please convert it to a named record or a class, or mark it with @custom for custom serialization.',
         element: element,
       );
     }
+
+    final map = MapLiteral();
+
     final q = type.nullabilitySuffix == .question ? '?' : '';
     for (final field in type.namedFields) {
       final fieldName = field.name;
       if (field.type.isA(Checker.string) || allowDynamic) {
-        yield .mapEntry(fieldName, '${element.name!}$q.$fieldName');
+        map.add(fieldName, '${element.name!}$q.$fieldName');
       } else {
         final q2 = field.type.nullabilitySuffix == .question ? '?' : '';
-        yield .mapEntry(
-          fieldName,
-          '${element.name!}$q.$fieldName$q2.toString()',
-        );
+        map.add(fieldName, '${element.name!}$q.$fieldName$q2.toString()');
       }
     }
+
+    return map;
   }
 
   @override

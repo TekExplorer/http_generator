@@ -1,8 +1,12 @@
-import 'package:source_helper/source_helper.dart';
-
 // leave the dot-shorthands alone
 
 // sealed class Literal {}
+
+import 'package:source_helper/source_helper.dart';
+
+extension StringLiteralExt on String {
+  String get literal => escapeDartString(this);
+}
 
 sealed class CollectionLiteral {
   CollectionLiteral({this.nullAware = true});
@@ -10,6 +14,9 @@ sealed class CollectionLiteral {
 
   final elements = <CollectionEntry>[];
   bool get isEmpty => elements.isEmpty;
+  bool get isNotEmpty => elements.isNotEmpty;
+
+  void addLiteral(CollectionLiteral literal) => addAll(literal.elements);
 
   void addAll(Iterable<CollectionEntry> newElements) =>
       elements.addAll(newElements);
@@ -31,32 +38,32 @@ sealed class CollectionLiteral {
   }
 }
 
-sealed class IterableLiteral extends CollectionLiteral {
-  IterableLiteral();
-  IterableLiteral.of(Iterable<CollectionEntry> elements) {
-    addAll(elements);
-  }
+// sealed class IterableLiteral extends CollectionLiteral {
+//   IterableLiteral();
+//   IterableLiteral.of(Iterable<CollectionEntry> elements) {
+//     addAll(elements);
+//   }
 
-  void add(String element) => addEntry(.entry(element));
-}
+//   void add(String element) => addEntry(.element(element));
+// }
 
-final class ListLiteral extends IterableLiteral {
-  @override
-  (String, String) get _delimiters => ('[', ']');
-}
+// final class ListLiteral extends IterableLiteral {
+//   @override
+//   (String, String) get _delimiters => ('[', ']');
+// }
 
-final class SetLiteral extends IterableLiteral {}
+// final class SetLiteral extends IterableLiteral {}
 
 final class MapLiteral extends CollectionLiteral {
   void add(String key, String expression) =>
       addEntry(.mapEntry(key, expression));
 }
 
-sealed class CollectionEntry {
+abstract final class CollectionEntry {
   factory CollectionEntry.spread(String expression) = _CollectionEntrySpread;
-  factory CollectionEntry.entry(String expression) = _CollectionEntryElement;
-  factory CollectionEntry.mapEntry(String key, String expression) =>
-      .entry('${escapeDartString(key)}: $expression');
+  factory CollectionEntry.element(String expression) = _CollectionEntryElement;
+  factory CollectionEntry.mapEntry(String key, String expression) =
+      _CollectionMapEntry;
 
   String get expression;
 
@@ -77,10 +84,14 @@ final class _CollectionEntryElement implements CollectionEntry {
   String toString() => expression;
 
   @override
-  CollectionEntry get nullAware => .entry('?${nullUnaware.expression}');
+  _CollectionEntryElement get nullAware => .new('?${nullUnaware.expression}');
 
   @override
-  CollectionEntry get nullUnaware => .entry(expression.replaceAll('?', ''));
+  _CollectionEntryElement get nullUnaware {
+    final expression = this.expression.trim();
+    if (expression.startsWith('?')) return .new(expression.substring(1));
+    return .new(expression);
+  }
 }
 
 final class _CollectionEntrySpread implements CollectionEntry {
@@ -93,9 +104,36 @@ final class _CollectionEntrySpread implements CollectionEntry {
   String toString() => '...$expression';
 
   @override
-  CollectionEntry get nullAware =>
-      .entry('?${nullUnaware.expression.replaceAll(':', ':?')}');
+  _CollectionEntrySpread get nullAware => .new('?${nullUnaware.expression}');
 
   @override
-  CollectionEntry get nullUnaware => .entry(expression.replaceAll('?', ''));
+  _CollectionEntrySpread get nullUnaware {
+    final expression = this.expression.trim();
+    if (expression.startsWith('?')) return .new(expression.substring(1));
+    return .new(expression);
+  }
+}
+
+final class _CollectionMapEntry implements _CollectionEntryElement {
+  final String key;
+
+  final String value;
+
+  @override
+  String get expression => '${key.literal}: $value';
+
+  _CollectionMapEntry(this.key, this.value);
+
+  @override
+  String toString() => '$key: $expression';
+
+  @override
+  _CollectionMapEntry get nullAware => .new(key, '?${nullUnaware.expression}');
+
+  @override
+  _CollectionMapEntry get nullUnaware {
+    final value = this.value.trim();
+    if (value.startsWith('?')) return .new(key, value.substring(1));
+    return .new(key, value);
+  }
 }

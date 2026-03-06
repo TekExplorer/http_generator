@@ -29,13 +29,13 @@ MapLiteral? createQuery(String uri, FunctionTypedElement function) {
       );
     }
 
-    final entries = Coding.encodeToMapStringString(
+    final encoded = Coding.encodeToMapStringString(
       param.element,
       allowDynamic: true,
     );
 
-    if (entries.isNotEmpty) {
-      mapLiteral.addAll(entries);
+    if (encoded.isNotEmpty) {
+      mapLiteral.addLiteral(encoded);
       continue;
     }
 
