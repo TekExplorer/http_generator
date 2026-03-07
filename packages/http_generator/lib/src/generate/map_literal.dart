@@ -17,7 +17,10 @@ sealed class _CollectionLiteral {
   bool get isEmpty => elements.isEmpty;
   bool get isNotEmpty => elements.isNotEmpty;
 
-  void addLiteral(_CollectionLiteral literal) => addAll(literal.elements);
+  void addLiteral(_CollectionLiteral? literal) {
+    if (literal == null) return;
+    addAll(literal.elements);
+  }
 
   void addAll(Iterable<CollectionEntry> newElements) =>
       elements.addAll(newElements);
@@ -63,6 +66,9 @@ final class MapLiteral extends _CollectionLiteral {
   MapLiteral({super.nullAware});
 
   void add(String key, String expression) =>
+      addEntry(.mapEntry(key.literal, expression));
+
+  void addRaw(String key, String expression) =>
       addEntry(.mapEntry(key, expression));
 }
 
@@ -108,7 +114,7 @@ final class _CollectionMapEntry implements CollectionEntry {
   final String value;
 
   @override
-  String get expression => '${key.literal}: $value';
+  String get expression => '$key: $value';
 
   _CollectionMapEntry(this.key, this.value);
 

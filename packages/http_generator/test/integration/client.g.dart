@@ -48,12 +48,10 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/response');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {
+    $request.headers.addAll({
       'x-class-header': 'class-header-value',
       'x-method-header': 'method-header-value',
       'x-header': 'value',
-    });
-    $request.headers.addAll({
       'x-param-header': ?paramHeader,
       ...headers,
       ...await _extra.getResponseHeaders(fields, specialHeader: specialHeader),
@@ -70,7 +68,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: await _extra.updateThingEncode(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }
@@ -83,7 +81,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: await _extra.updateThing2Encode(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return _extra.updateThing2Decode($response);
@@ -113,7 +111,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       }),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -130,7 +128,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode(toJsonT(body))),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return fromJsonR(jsonDecode($response.body));
@@ -140,7 +138,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/response');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request).then(http.Response.fromStream);
   }
@@ -149,7 +147,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/thing');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return Data.fromJson(jsonDecode($response.body) as Map<String, dynamic>);
@@ -159,7 +157,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/raw-thing');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return $response.body;
@@ -169,7 +167,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/generic-thing');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return Gen<Data>.fromJson(
@@ -186,7 +184,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -199,7 +197,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode(body)),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -212,7 +210,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode(body.toJson())),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -227,7 +225,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       ),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -240,7 +238,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode(body.map((e) => e.toJson()))),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -253,7 +251,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -262,7 +260,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/record0');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return ();
@@ -272,7 +270,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/record2');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return () {
@@ -285,7 +283,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/record_named');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return () {
@@ -302,7 +300,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode({'id': body.id, 'name': body.name})),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -315,7 +313,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.string(jsonEncode([body.$1, body.$2])),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -330,7 +328,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     );
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request).then(http.Response.fromStream);
   }
@@ -339,7 +337,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/path/${id}/detail/${detailId}');
     final $request = $createRequest('GET', $uri);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request).then(http.Response.fromStream);
   }
@@ -348,7 +346,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
     Uri $uri = baseUrl.resolve('/cancelable');
     final $request = $createRequest('GET', $uri, abortTrigger: abortTrigger);
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -378,7 +376,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       ),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     final $response = await $send($request).then(http.Response.fromStream);
     return (jsonDecode($response.body) as List)
@@ -404,7 +402,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: EncodedFields.from({...fields}),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -417,7 +415,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: EncodedFields.from({...fields.toJson()}),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -430,7 +428,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: EncodedFields.from({...fields.toJson((obj) => obj)}),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -459,7 +457,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       }),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     await $send($request).then(http.Response.fromStream);
   }
@@ -472,7 +470,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.stream(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }
@@ -485,7 +483,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.stream(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }
@@ -498,7 +496,7 @@ abstract mixin class _$NoBaseUrl implements NoBaseUrl {
       body: BodyEncoded.stream(body),
     );
 
-    $request.headers.addAll(const {'x-class-header': 'class-header-value'});
+    $request.headers.addAll({'x-class-header': 'class-header-value'});
 
     return await $send($request);
   }

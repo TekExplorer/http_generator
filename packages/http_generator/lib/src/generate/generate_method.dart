@@ -11,10 +11,13 @@ class GenerateForMethod {
     if (impl != null) context.members.add(impl);
   }
 
+  late final methodAnnotation = MethodAnnotation(
+    ConstantReader(Checker.method.firstAnnotationOf(method)),
+  );
+
   @protected
   String? buildMethod() {
-    final methodAnnotation = Checker.method.firstAnnotationOf(method);
-    if (methodAnnotation == null) return null;
+    if (methodAnnotation.isNull) return null;
 
     final returnType = method.returnType;
     if (!returnType.isA(Checker.future)) {
@@ -24,9 +27,7 @@ class GenerateForMethod {
       );
     }
 
-    final methodReader = MethodAnnotation(ConstantReader(methodAnnotation));
-    final httpMethod = methodReader.method;
-    final path = methodReader.path;
+    final httpMethod = methodAnnotation.method;
 
     final futureType = returnType.typeArgumentsOf(Checker.future)!.single;
 
@@ -54,6 +55,27 @@ class GenerateForMethod {
       // good
     }
 
+    final body = RequestBody(method, methodAnnotation, context).buildEncoded();
+    final trigger = abortTrigger(method);
+
+    return '''
+  ${methodSignature(method)} async {
+    ${_buildUri()}
+    final \$request = #{{http_annotation|\$createRequest}}(${[
+      httpMethod.literal,
+      '\$uri',
+      if (trigger != null) 'abortTrigger: $trigger', //
+      if (body != null) 'body: $body', //
+    ].join(',\n')});
+    
+    ${[if (allHeaders() case final headers?) '\$request.headers.addAll($headers);'].join()}
+    
+    ${_processRequest(futureType).join('\n')}
+  }
+''';
+  }
+
+  String _buildUri() {
     final fragments = Checker.fragment.annotatedOf(method.formalParameters);
     if (fragments.length > 1) {
       throw InvalidGenerationSourceError(
@@ -63,38 +85,20 @@ class GenerateForMethod {
       );
     }
 
-    final fragment = fragments.firstOrNull;
+    final fragment = fragments.firstOrNull?.element;
+
+    final path = methodAnnotation.path;
     final query = createQuery(r'$uri', method, context);
 
-    final body = RequestBody(method, methodReader, context);
-
-    return '''
-  ${methodSignature(method)} async {
-    ${[
+    return [
       'Uri \$uri = #{{baseUrl}}.resolve(${modifyPath(path, method.formalParameters)});',
       if (query != null || fragment != null) ...[
         r'$uri = $uri.replace(', //
         if (query != null) 'queryParameters: $query,', //
-        if (fragment != null) 'fragment: ${fragment.element.name},',
+        if (fragment != null) 'fragment: ${fragment.name},',
         ');',
       ],
-    ].join('\n')}
-    final \$request = #{{http_annotation|\$createRequest}}(${[
-      httpMethod.literal,
-      '\$uri',
-      if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger', //
-      if (body.buildEncoded() case final body?) 'body: $body', //
-    ].join(',\n')});
-    
-    ${[
-      if (staticHeaders(methodReader) case final headers?) '\$request.headers.addAll($headers);',
-      if (parameterHeaders(methodReader) case final headers?) '\$request.headers.addAll($headers);',
-      //
-    ].join('\n')}
-    
-    ${_processRequest(futureType).join('\n')}
-  }
-''';
+    ].join('\n');
   }
 
   Iterable<String> _processRequest(DartType futureType) sync* {
@@ -135,8 +139,14 @@ class GenerateForMethod {
     }
   }
 
+  MapLiteral? allHeaders() {
+    return MapLiteral()
+      ..addLiteral(staticHeaders())
+      ..addLiteral(parameterHeaders());
+  }
+
   @protected
-  String? staticHeaders(MethodAnnotation annotation) {
+  MapLiteral? staticHeaders() {
     final readers = [
       ...Checker.headers.annotationsOf(method.enclosingElement!),
       ...Checker.headers.annotationsOf(method),
@@ -144,21 +154,24 @@ class GenerateForMethod {
 
     final staticValues = <DartObject, DartObject>{
       for (final reader in readers) ...reader.headers,
-      ...annotation.headers,
+      ...methodAnnotation.headers,
     }.nonNulls;
 
     if (staticValues.isEmpty) return null;
+    final literal = MapLiteral();
 
-    final code = [
-      for (var entry in staticValues.entries)
-        '${entry.key.toCode(addLeadingConst: false)}: ${entry.value.toCode(addLeadingConst: false)}',
-    ];
+    for (final entry in staticValues.entries) {
+      literal.addRaw(
+        entry.key.toCode(addLeadingConst: false),
+        entry.value.toCode(addLeadingConst: false),
+      );
+    }
 
-    return 'const {${code.join(', ')}}';
+    return literal;
   }
 
   @protected
-  MapLiteral? parameterHeaders(MethodAnnotation annotation) {
+  MapLiteral? parameterHeaders() {
     final headers = MapLiteral();
 
     final customHeaders = <FormalParameterElement>[];
