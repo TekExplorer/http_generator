@@ -6,7 +6,11 @@ part of '../generator.dart';
 //   return queryParameters.isNotEmpty || queryAllParameters.isNotEmpty;
 // }
 
-MapLiteral? createQuery(String uri, FunctionTypedElement function) {
+MapLiteral? createQuery(
+  String uri,
+  FunctionTypedElement function,
+  GeneratorContext context,
+) {
   List<FormalParameterElement> formalParameters = function.formalParameters;
 
   final queryParameters = Checker.query.annotatedOf(formalParameters);
@@ -53,9 +57,14 @@ MapLiteral? createQuery(String uri, FunctionTypedElement function) {
         param.annotation.read('name').nullOr?.stringValue ?? paramName;
 
     if (Checker.custom.hasAnnotationOf(param.element)) {
-      throw UnimplementedError(
-        'Custom query parameter serialization is not yet implemented. Parameter: `$paramName`',
+      final methodName = '${function.name}_${paramName}_encode';
+      context.requestMethod(
+        '#{{dart:async|FutureOr}}<String>',
+        methodName,
+        '${type.toCode()} $paramName',
       );
+      mapLiteral.add(queryKey, 'await #{{extra}}$methodName($paramName)');
+      continue;
     }
 
     if (type is DynamicType ||

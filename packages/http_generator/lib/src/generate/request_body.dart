@@ -180,7 +180,7 @@ class RequestBody {
 
     final field = Checker.field.annotatedOf(method.formalParameters);
 
-    final customParameters = <FormalParameterElement>[];
+    final customFieldParameters = <FormalParameterElement>[];
 
     for (final param in field) {
       final paramName = param.element.name!;
@@ -192,7 +192,7 @@ class RequestBody {
       final useCustom = Checker.custom.hasAnnotationOf(param.element);
 
       if (useCustom) {
-        customParameters.add(param.element);
+        customFieldParameters.add(param.element);
         continue;
       }
 
@@ -218,7 +218,7 @@ class RequestBody {
         log.warning(
           'Parameter `${param.element.name}` has unsupported type `${paramType.getDisplayString()}` for multipart encoding. Please either change the parameter type to `String`, `num`, `bool`, `FilePart`, or `http.MultipartFile`, or specify a custom encoder with `@Field(custom: true)` and implement the encoding logic yourself.',
         );
-        customParameters.add(param.element);
+        customFieldParameters.add(param.element);
       }
       if (line != null) {
         if (paramType.isNullableType) {
@@ -229,6 +229,7 @@ class RequestBody {
     }
 
     final fields = Checker.fields.annotatedOf(method.formalParameters);
+    final customFieldsParameters = <FormalParameterElement>[];
 
     for (final param in fields) {
       final paramName = param.element.name!;
@@ -237,7 +238,7 @@ class RequestBody {
       final useCustom = Checker.custom.hasAnnotationOf(param.element);
 
       if (useCustom) {
-        customParameters.add(param.element);
+        customFieldsParameters.add(param.element);
         continue;
       }
 
@@ -305,6 +306,19 @@ class RequestBody {
 ''');
       }
     }
+
+    final customParameters = customFieldParameters.followedBy(
+      customFieldsParameters,
+    );
+    // for (final param in customParameters) {
+    //   final methodName = '${method.name}_${param.name}';
+    //   context.requestMethod(
+    //     '#{{dart:async|FutureOr}}<void>',
+    //     methodName,
+    //     '(${param.type.toCode()} ${param.name})',
+    //   );
+    //   lines.add('await #{{extra}}$methodName(${param.name});');
+    // }
 
     if (customParameters.isNotEmpty) {
       final methodName = '${method.name}BuildMultipart';

@@ -64,7 +64,7 @@ class GenerateForMethod {
     }
 
     final fragment = fragments.firstOrNull;
-    final query = createQuery(r'$uri', method);
+    final query = createQuery(r'$uri', method, context);
 
     final body = RequestBody(method, methodReader, context);
 
