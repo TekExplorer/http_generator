@@ -7,12 +7,12 @@ class GenerateForMethod {
   final GeneratorContext context;
 
   void build() {
-    final impl = methodImpl();
+    final impl = buildMethod();
     if (impl != null) context.members.add(impl);
   }
 
   @protected
-  String? methodImpl() {
+  String? buildMethod() {
     final methodAnnotation = Checker.method.firstAnnotationOf(method);
     if (methodAnnotation == null) return null;
 
