@@ -81,7 +81,7 @@ extension on FormalParameterElement {
 }
 
 extension type MethodAnnotation(ConstantReader reader)
-    implements ConstantReader {
+    implements ConstantReader, HeadersAnnotation {
   String get method => read('method').stringValue;
   String get path => read('path').stringValue;
 
@@ -98,12 +98,20 @@ extension type MethodAnnotation(ConstantReader reader)
   //   );
   // }
 
-  Map<DartObject?, DartObject?>? get headers =>
-      read('headers').nullOr?.objectValue.toMapValue();
+  // /// returns like `const {'content': 'value'}`
+  // String? get headersCode =>
+  //     read('headers').nullOr?.objectValue.toCode(addLeadingConst: false);
+}
 
-  /// returns like `const {'content': 'value'}`
-  String? get headersCode =>
-      read('headers').nullOr?.objectValue.toCode(addLeadingConst: false);
+extension type HeadersAnnotation(ConstantReader reader)
+    implements ConstantReader {
+  Map<DartObject, DartObject> get headers =>
+      read('headers').nullOr?.objectValue.toMapValue()?.cast() ?? {};
+}
+
+extension type HeaderAnnotation(ConstantReader reader)
+    implements ConstantReader {
+  String? get key => read('key').nullOr?.stringValue;
 }
 
 extension on ConstantReader {

@@ -138,18 +138,13 @@ class GenerateForMethod {
   @protected
   String? staticHeaders(MethodAnnotation annotation) {
     final readers = [
-      ...Checker.annotation(
-        'Headers',
-      ).annotationsOf(method.enclosingElement!).map(ConstantReader.new),
-      ...Checker.annotation(
-        'Headers',
-      ).annotationsOf(method).map(ConstantReader.new),
-      annotation,
-    ];
+      ...Checker.headers.annotationsOf(method.enclosingElement!),
+      ...Checker.headers.annotationsOf(method),
+    ].map(ConstantReader.new).map(HeadersAnnotation.new);
 
-    final staticValues = <DartObject?, DartObject?>{
-      for (var reader in readers)
-        ...?reader.read('headers').nullOr?.objectValue.toMapValue(),
+    final staticValues = <DartObject, DartObject>{
+      for (final reader in readers) ...reader.headers,
+      ...annotation.headers,
     }.nonNulls;
 
     if (staticValues.isEmpty) return null;
@@ -175,7 +170,7 @@ class GenerateForMethod {
         customHeaders.add(element);
         continue;
       }
-      final key = annotation.read('key').nullOr?.stringValue ?? element.name!;
+      final key = HeaderAnnotation(annotation).key ?? element.name!;
       final q = element.type.isNullableType ? '?' : '';
       headers.add(key, '$q${element.name!}');
     }
