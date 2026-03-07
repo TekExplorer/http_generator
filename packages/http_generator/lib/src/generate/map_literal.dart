@@ -26,7 +26,7 @@ sealed class _CollectionLiteral {
 
   void addSpread(String expression) => addEntry(.spread(expression));
 
-  (String, String) get _delimiters => ('{', '}');
+  String get _delimiters => '{}';
 
   @override
   String toString() {
@@ -38,7 +38,7 @@ sealed class _CollectionLiteral {
       },
     );
 
-    final (l, r) = _delimiters;
+    final [l, r] = _delimiters.split('');
     return '$l${elements.join(', ')}$r';
   }
 }
