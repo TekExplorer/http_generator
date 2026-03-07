@@ -57,13 +57,12 @@ MapLiteral? createQuery(
         param.annotation.read('name').nullOr?.stringValue ?? paramName;
 
     if (Checker.custom.hasAnnotationOf(param.element)) {
-      final methodName = '${function.name}_${paramName}_encode';
-      context.requestMethod(
+      final methodName = context.addMethod(
         '#{{dart:async|FutureOr}}<String>',
-        methodName,
-        '${type.toCode()} $paramName',
+        '${function.name}_${paramName}_encode',
+        [Parameter(type.toCode(), paramName)],
       );
-      mapLiteral.add(queryKey, 'await #{{extra}}$methodName($paramName)');
+      mapLiteral.add(queryKey, 'await $methodName($paramName)');
       continue;
     }
 

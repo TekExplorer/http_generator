@@ -91,19 +91,18 @@ class HttpClientGenerator extends Generator {
 
     buildMethods(element.methods, context);
 
-    if (context.additionalMethods.isNotEmpty) {
+    if (context._additionalMethods.isNotEmpty) {
       switch (annotation.extraType) {
         case .inline:
           context.args['extra'] = (buffer) => buffer.write('_');
 
           context.members.addAll(
-            context.additionalMethods.map((e) {
-              final (returnType, name, parameters) = e;
-              if (parameters != null) {
-                return '@#{{meta|protected}} $returnType _$name$parameters;';
-              } else {
-                return '@#{{meta|protected}} $returnType get _$name;';
-              }
+            context._additionalMethods.map((e) {
+              final returnType = e.returnType;
+              final name = e.name;
+              final parameters = '(${e.parameters.toCode()})';
+
+              return '@#{{meta|protected}} $returnType _$name$parameters;';
             }),
           );
         case .mixin:
@@ -113,13 +112,11 @@ class HttpClientGenerator extends Generator {
           context.members.add(
             '@#{{meta|protected}} $extraClassName get _extra;',
           );
-          final methods = context.additionalMethods.map((e) {
-            final (returnType, name, parameters) = e;
-            if (parameters != null) {
-              return '$returnType $name$parameters;';
-            } else {
-              return '$returnType get $name;';
-            }
+          final methods = context._additionalMethods.map((e) {
+            final returnType = e.returnType;
+            final name = e.name;
+            final parameters = '(${e.parameters.toCode()})';
+            return '$returnType $name$parameters;';
           });
           context.libraryBuffer.add('''
             mixin $extraClassName { ${methods.join('\n')} }
@@ -131,15 +128,14 @@ class HttpClientGenerator extends Generator {
           context.members.add(
             '@#{{meta|protected}} $extraClassName get _extra;',
           );
-          final methods = context.additionalMethods.map((e) {
-            final (returnType, name, parameters) = e;
-            final params = parameters ?? '()';
-            return '$returnType Function$params $name;';
+          final methods = context._additionalMethods.map((e) {
+            final returnType = e.returnType;
+            final name = e.name;
+            return '$returnType Function(${e.parameters.toCode()}) $name;';
           });
 
-          final fields = context.additionalMethods.map((e) {
-            final (_, name, _) = e;
-            return 'required this.$name';
+          final fields = context._additionalMethods.map((e) {
+            return 'required this.${e.name}';
           });
           context.libraryBuffer.add('''
             final class $extraClassName {
@@ -239,12 +235,21 @@ class GeneratorContext {
   /// for adding things to the class/mixin level, e.g. fields, helper methods, etc.
   final members = <String>[];
 
-  final additionalMethods =
-      <(String returnType, String name, String? parameters)>[];
+  final _additionalMethods = <Method>[];
 
-  /// Not specifying [parameters] will make it a getter
-  void requestMethod(String returnType, String name, [String? parameters]) {
-    additionalMethods.add((returnType, name, parameters));
+  @useResult
+  String addMethod(
+    String returnType,
+    String name,
+    Iterable<Parameter> parameters,
+  ) {
+    _additionalMethods.add(Method(returnType, name, parameters));
+    final index = _additionalMethods.length;
+    final arg = '#{{method:$name:$index}}';
+
+    final resolvedMethodName = '#{{extra}}$name';
+    args[arg] = (buffer) => buffer.write(resolvedMethodName);
+    return resolvedMethodName;
   }
 
   Map<String, void Function()> _$args(AnalyzerBuffer buffer) => {
@@ -253,4 +258,51 @@ class GeneratorContext {
         entry.value(buffer);
       },
   };
+}
+
+class Method {
+  Method(this.returnType, this.name, this.parameters);
+
+  Method.fromElement(MethodElement element)
+    : returnType = element.returnType.toCode(),
+      name = element.name!,
+      parameters = element.formalParameters.map(Parameter.fromElement);
+
+  final String returnType;
+  final String name;
+  final Iterable<Parameter> parameters;
+}
+
+extension on Iterable<Parameter> {
+  String toCode() => map((p) => p.toCode()).join(', ');
+}
+
+class Parameter {
+  Parameter(
+    this.type,
+    this.name, {
+    this.isNamed = false,
+    this.isRequired = false,
+  });
+
+  Parameter.fromElement(FormalParameterElement element)
+    : type = element.type.toCode(),
+      name = element.name!,
+      isNamed = element.isNamed,
+      isRequired = element.isRequired;
+
+  /// As code
+  final String type;
+  final String name;
+  final bool isNamed;
+  final bool isRequired;
+
+  String toCode() {
+    final buffer = StringBuffer();
+    if (isNamed && isRequired) {
+      buffer.write('required ');
+    }
+    buffer.write('$type $name');
+    return buffer.toString();
+  }
 }

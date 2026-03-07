@@ -71,13 +71,13 @@ class RequestBody {
     final bodyType = bodyAnnotation.bodyType;
 
     String? buildCustom() {
-      final methodName = '${method.name}Encode';
-      context.requestMethod(
-        '#{{dart:async|FutureOr}}<$encoded>',
-        methodName,
-        '(${type.toCode()} $name)',
+      final methodName = context.addMethod(
+        '#{{dart:async|FutureOr}}<String>',
+        '${method.name}Encode',
+        [Parameter(type.toCode(), name)],
       );
-      return 'await #{{extra}}$methodName($name)';
+
+      return 'await $methodName($name)';
     }
 
     if (Checker.custom.hasAnnotationOf(param.element)) return buildCustom();
@@ -321,15 +321,16 @@ class RequestBody {
     // }
 
     if (customParameters.isNotEmpty) {
-      final methodName = '${method.name}BuildMultipart';
-
-      context.requestMethod(
+      final methodName = context.addMethod(
         '#{{dart:async|FutureOr}}<void>',
-        methodName,
-        '(#{{http_annotation|MultipartBuilder}} \$builder, ${customParameters.toCode()})',
+        '${method.name}BuildMultipart',
+        [
+          Parameter('#{{http_annotation|MultipartBuilder}}', r'$builder'),
+          ...customParameters.map(Parameter.fromElement),
+        ],
       );
       lines.add(
-        'await #{{extra}}$methodName($request, ${customParameters.toCallCode()});',
+        'await $methodName($request, ${customParameters.toCallCode()});',
       );
     }
 
@@ -374,14 +375,13 @@ class RequestBody {
     }
 
     if (customFields.isNotEmpty) {
-      final methodName = '${method.name}EncodeFields';
-      context.requestMethod(
+      final methodName = context.addMethod(
         '#{{dart:async|FutureOr}}<Map<String, String>>',
-        methodName,
-        '(${customFields.toCode()})',
+        '${method.name}EncodeFields',
+        customFields.map(Parameter.fromElement),
       );
 
-      map.addSpread('#{{extra}}$methodName(${customFields.toCallCode()})');
+      map.addSpread('$methodName(${customFields.toCallCode()})');
     }
 
     return map;

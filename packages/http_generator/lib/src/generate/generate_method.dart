@@ -92,42 +92,47 @@ class GenerateForMethod {
       //
     ].join('\n')}
     
-    ${() sync* {
-      if (Checker.streamedResponse.isExactlyType(futureType)) {
-        yield r'return await #{{send}}($request);';
-        return;
-      }
-
-      if (futureType is VoidType) {
-        // wait for the stream to complete. configurable?
-        yield r'await #{{send}}($request).then(#{{http|Response}}.fromStream);';
-        return;
-      }
-
-      if (futureType.isA(Checker.response)) {
-        yield r'return await #{{send}}($request).then(#{{http|Response}}.fromStream);';
-        return;
-      }
-
-      //TODO: figure out how to support direct stream returns
-      if (Checker.stream.isExactlyType(futureType)) {
-        yield r'final $response = await #{{send}}($request);';
-        yield r'return $response.stream;';
-        return;
-      }
-
-      yield r'final $response = await #{{send}}($request).then(#{{http|Response}}.fromStream);';
-
-      try {
-        yield 'return ${Coding.decodeResponse(r'$response', method)};';
-      } catch (e) {
-        final decodeMethodName = '${method.name}Decode';
-        context.requestMethod('#{{dart:async|FutureOr}}<${futureType.toCode()}>', decodeMethodName, '(#{{http|Response}} response)');
-        yield 'return #{{extra}}$decodeMethodName(\$response);';
-      }
-    }().join('\n')}
+    ${_processRequest(futureType).join('\n')}
   }
 ''';
+  }
+
+  Iterable<String> _processRequest(DartType futureType) sync* {
+    if (Checker.streamedResponse.isExactlyType(futureType)) {
+      yield r'return await #{{send}}($request);';
+      return;
+    }
+
+    if (futureType is VoidType) {
+      // wait for the stream to complete. configurable?
+      yield r'await #{{send}}($request).then(#{{http|Response}}.fromStream);';
+      return;
+    }
+
+    if (futureType.isA(Checker.response)) {
+      yield r'return await #{{send}}($request).then(#{{http|Response}}.fromStream);';
+      return;
+    }
+
+    //TODO: figure out how to support direct stream returns
+    if (Checker.stream.isExactlyType(futureType)) {
+      yield r'final $response = await #{{send}}($request);';
+      yield r'return $response.stream;';
+      return;
+    }
+
+    yield r'final $response = await #{{send}}($request).then(#{{http|Response}}.fromStream);';
+
+    try {
+      yield 'return ${Coding.decodeResponse(r'$response', method)};';
+    } catch (e) {
+      final name = context.addMethod(
+        '#{{dart:async|FutureOr}}<${futureType.toCode()}>',
+        '${method.name}Decode',
+        [Parameter('#{{http|Response}}', 'response')],
+      );
+      yield 'return $name(\$response);';
+    }
   }
 
   @protected
@@ -197,18 +202,17 @@ class GenerateForMethod {
             .compareTo(method.formalParameters.indexOf(b)),
       );
 
-      final methodName = '${method.name}Headers';
-      context.requestMethod(
+      final methodName = context.addMethod(
         '#{{dart:async|FutureOr}}<Map<String, String>>',
-        methodName,
-        '(${customHeaders.toCode()})',
+        '${method.name}Headers',
+        customHeaders.map(Parameter.fromElement),
       );
 
       final call = customHeaders.map(
         (e) => e.isNamed ? '${e.name}: ${e.name}' : e.name!,
       );
 
-      headers.addSpread('await #{{extra}}$methodName(${call.join(', ')})');
+      headers.addSpread('await $methodName(${call.join(', ')})');
     }
 
     return headers;
