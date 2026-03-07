@@ -72,7 +72,7 @@ class RequestBody {
 
     String? buildCustom() {
       final methodName = context.addMethod(
-        '#{{dart:async|FutureOr}}<String>',
+        '#{{dart:async|FutureOr}}<$encoded>',
         '${method.name}Encode',
         [Parameter(type.toCode(), name)],
       );

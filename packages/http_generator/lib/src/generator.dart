@@ -274,15 +274,60 @@ class Method {
 }
 
 extension on Iterable<Parameter> {
-  String toCode() => map((p) => p.toCode()).join(', ');
+  String toCode() {
+    final positional = where((p) => !p.isNamed);
+    final positionalRequired = positional.where((p) => p.isRequired);
+    final positionalOptional = positional.where((p) => !p.isRequired);
+    final named = where((p) => p.isNamed);
+
+    final buffer = StringBuffer();
+    buffer.writeAll(positionalRequired.map((p) => '${p.toCode()},'));
+
+    if (positionalOptional.isNotEmpty) {
+      buffer.write('[');
+      buffer.writeAll(positionalOptional.map((p) => '${p.toCode()},'));
+      buffer.write(']');
+    }
+
+    if (named.isNotEmpty) {
+      buffer.write('{');
+      buffer.writeAll(named.map((p) => '${p.toCode()},'));
+      buffer.write('}');
+    }
+
+    return buffer.toString();
+  }
 }
 
 class Parameter {
-  Parameter(
+  factory Parameter(
+    String type,
+    String name, {
+    bool isNamed = false,
+    bool? isRequired,
+  }) {
+    name = name.trim();
+    if (name.startsWith('required ')) {
+      return Parameter._(
+        type,
+        name.replaceFirst('required ', ''),
+        isNamed: true,
+        isRequired: true,
+      );
+    }
+    return Parameter._(
+      type,
+      name,
+      isNamed: isNamed,
+      isRequired: isRequired ?? !isNamed,
+    );
+  }
+
+  Parameter._(
     this.type,
     this.name, {
-    this.isNamed = false,
-    this.isRequired = false,
+    required this.isNamed,
+    required this.isRequired,
   });
 
   Parameter.fromElement(FormalParameterElement element)
@@ -299,7 +344,7 @@ class Parameter {
 
   String toCode() {
     final buffer = StringBuffer();
-    if (isNamed && isRequired) {
+    if (isNamed && isRequired == true) {
       buffer.write('required ');
     }
     buffer.write('$type $name');
