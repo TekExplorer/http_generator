@@ -16,7 +16,7 @@ class NoBaseUrlImpl extends NoBaseUrl with _$NoBaseUrl {
   final _extra = _NoBaseUrlExtra();
 }
 
-class _NoBaseUrlExtra extends _$NoBaseUrlExtra {
+class _NoBaseUrlExtra with _$NoBaseUrlExtra {
   @override
   Map<String, String> getResponseHeaders(
     Fields fields, {
@@ -54,7 +54,7 @@ class _NoBaseUrlExtra extends _$NoBaseUrlExtra {
 }
 
 @Headers({'x-class-header': 'class-header-value'})
-@RestClient(implementSelf: true, inlineExtraMethods: false)
+@RestClient(implementSelf: true, extraType: .mixin)
 abstract class NoBaseUrl {
   factory NoBaseUrl({required Uri baseUrl, required http.Client client}) =
       NoBaseUrlImpl;

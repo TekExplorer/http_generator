@@ -2,6 +2,51 @@ import 'dart:async';
 
 import 'package:meta/meta_meta.dart';
 
+enum ExtraType {
+  /// Extra methods will be added as private members of the class directly like
+  /// ```dart
+  /// @RestClient()
+  /// class MyClass with _$MyClass {
+  ///   ...
+  ///   @override
+  ///   _someMethod(object) => .string(object.encode());
+  /// }
+  inline,
+
+  /// Extra methods will be placed in a mixin for you to implement
+  ///
+  /// Instantiate your class to the `_extra` field like
+  /// ```dart
+  /// @RestClient()
+  /// class MyClass with _$MyClass {
+  ///   ...
+  ///   @override
+  ///   final _extra = _MyClassExtra();
+  /// }
+  ///
+  /// class _MyClassExtra with _$MyClassExtra {
+  ///   @override
+  ///   someMethod(object) => .string(object.encode);
+  /// }
+  /// ```
+  mixin,
+
+  /// Extra methods will be placed in a class as fields for you to provide
+  ///
+  /// Instantiate your class to the `_extra` field like
+  /// ```dart
+  /// @RestClient()
+  /// class MyClass with _$MyClass {
+  ///   ...
+  ///   @override
+  ///   final _extra = .new(
+  ///     someMethod: (object) => .string(object.encode()),
+  ///   );
+  /// }
+  /// ```
+  factory,
+}
+
 // TODO: support any interface like mixins, extensions, extension types etc once augmentations are released
 @Target({TargetKind.classType})
 class RestClient {
@@ -11,7 +56,7 @@ class RestClient {
     this.implementSelf = false,
     this.renameSend,
     this.autoSelectClient = true,
-    this.inlineExtraMethods = true,
+    this.extraType = ExtraType.inline,
   });
 
   final String? baseUrl;
@@ -20,11 +65,8 @@ class RestClient {
   final String? renameSend;
   final bool autoSelectClient;
 
-  /// If true, generated code will include all extra encode/decode methods
-  /// in the generated type outright.
-  ///
-  /// If not, a single getter will be generated which will require a generated to be provided
-  final bool inlineExtraMethods;
+  /// see [ExtraType]
+  final ExtraType extraType;
 }
 
 const custom = Custom();

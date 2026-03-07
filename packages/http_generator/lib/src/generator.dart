@@ -7,7 +7,7 @@ import 'package:analyzer/dart/element/type_visitor.dart';
 import 'package:analyzer_buffer/analyzer_buffer.dart';
 import 'package:build/build.dart';
 import 'package:collection/collection.dart';
-import 'package:http_annotation/http_annotation.dart' show BodyType;
+import 'package:http_annotation/http_annotation.dart' show BodyType, ExtraType;
 import 'package:meta/meta.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:source_helper/source_helper.dart';
@@ -34,7 +34,8 @@ extension type RestClientAnnotation(ConstantReader reader)
   bool get implementSelf => read('implementSelf').boolValue;
   String? get renameSend => read('renameSend').nullOr?.stringValue;
   bool get autoSelectClient => read('autoSelectClient').boolValue;
-  bool get inlineExtraMethods => read('inlineExtraMethods').boolValue;
+  ExtraType get extraType =>
+      ExtraType.values[read('extraType').read('index').intValue];
 }
 
 class HttpClientGenerator extends Generator {
@@ -91,37 +92,61 @@ class HttpClientGenerator extends Generator {
     buildMethods(element.methods, context);
 
     if (context.additionalMethods.isNotEmpty) {
-      if (annotation.inlineExtraMethods) {
-        context.args['extra'] = (buffer) => buffer.write('_');
+      switch (annotation.extraType) {
+        case .inline:
+          context.args['extra'] = (buffer) => buffer.write('_');
 
-        context.members.addAll(
-          context.additionalMethods.map((e) {
+          context.members.addAll(
+            context.additionalMethods.map((e) {
+              final (returnType, name, parameters) = e;
+              if (parameters != null) {
+                return '@#{{meta|protected}} $returnType _$name$parameters;';
+              } else {
+                return '@#{{meta|protected}} $returnType get _$name;';
+              }
+            }),
+          );
+        case .mixin:
+          context.args['extra'] = (buffer) => buffer.write('_extra.');
+
+          final extraClassName = '_\$${element.name}Extra';
+          context.members.add(
+            '@#{{meta|protected}} $extraClassName get _extra;',
+          );
+          final methods = context.additionalMethods.map((e) {
             final (returnType, name, parameters) = e;
             if (parameters != null) {
-              return '@#{{meta|protected}} $returnType _$name$parameters;';
+              return '$returnType $name$parameters;';
             } else {
-              return '@#{{meta|protected}} $returnType get _$name;';
+              return '$returnType get $name;';
             }
-          }),
-        );
-      } else {
-        context.args['extra'] = (buffer) => buffer.write('_extra.');
+          });
+          context.libraryBuffer.add('''
+            mixin $extraClassName { ${methods.join('\n')} }
+          ''');
+        case .factory:
+          context.args['extra'] = (buffer) => buffer.write('_extra.');
 
-        final extraClassName = '_\$${element.name}Extra';
-        context.members.add('@#{{meta|protected}} $extraClassName get _extra;');
-        final methods = context.additionalMethods.map((e) {
-          final (returnType, name, parameters) = e;
-          if (parameters != null) {
-            return '$returnType $name$parameters;';
-          } else {
-            return '$returnType get $name;';
-          }
-        });
-        context.libraryBuffer.add('''
-abstract class $extraClassName {
-${methods.join('\n')}
-}
-''');
+          final extraClassName = '_\$${element.name}Extra';
+          context.members.add(
+            '@#{{meta|protected}} $extraClassName get _extra;',
+          );
+          final methods = context.additionalMethods.map((e) {
+            final (returnType, name, parameters) = e;
+            final params = parameters ?? '()';
+            return '$returnType Function$params $name;';
+          });
+
+          final fields = context.additionalMethods.map((e) {
+            final (_, name, _) = e;
+            return 'this.$name';
+          });
+          context.libraryBuffer.add('''
+            final class $extraClassName {
+              $extraClassName({${fields.join(', ')}});
+              ${methods.join('\n')}
+            }
+          ''');
       }
     }
 
