@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
-import 'coding/coding.dart';
+import 'coding/encoded.dart';
 
-Future<http.Abortable> $createRequest(
+http.Abortable $createRequest(
   String method,
   Uri url, {
   Future<void>? abortTrigger,
-  FutureOr<Encoded?>? body,
-}) async =>
-    (await body)?.createRequest(method, url, abortTrigger: abortTrigger) ??
+  Encoded? body,
+}) =>
+    body?.createRequest(method, url, abortTrigger: abortTrigger) ??
     http.AbortableRequest(method, url, abortTrigger: abortTrigger);
 
 // http.AbortableRequest $createRequest(

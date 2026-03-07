@@ -9,7 +9,7 @@ String? abortTrigger(MethodElement method) {
     final type = cancel.element.type;
     final name = cancel.element.name!;
     if (type.isA(Checker.cancelToken)) {
-      final q = type.nullabilitySuffix == .question ? '?' : '';
+      final q = type.isNullableType ? '?' : '';
       futures.add('$name$q.whenCancel');
     } else if (type.isA(Checker.future)) {
       futures.add(name);

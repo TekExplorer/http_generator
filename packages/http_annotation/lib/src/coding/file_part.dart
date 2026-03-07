@@ -1,4 +1,8 @@
-part of 'coding.dart';
+import 'dart:async';
+
+import 'package:http/http.dart' as http;
+
+import 'file_part_stub.dart' if (dart.library.io) 'file_part_io.dart';
 
 /// An intermediary representation of [http.MultipartFile] That does not require the field name, which is determined by the parameter name in the endpoint method.
 abstract final class FilePart {
@@ -21,11 +25,12 @@ abstract final class FilePart {
     http.MediaType? contentType,
   }) = _FilePartFromString;
 
-  factory FilePart.fromPath(
+  static Future<FilePart> fromPath(
     String filePath, {
     String? filename,
     http.MediaType? contentType,
-  }) = _FilePartFromPath;
+  }) =>
+      filePartFromPath(filePath, filename: filename, contentType: contentType);
 
   /// Creates a [FilePart] from an existing [http.MultipartFile].
   ///
@@ -33,7 +38,7 @@ abstract final class FilePart {
   factory FilePart.fromMultipartFile(http.MultipartFile multipartFile) =
       _FilePartFromMultipartFile;
 
-  FutureOr<http.MultipartFile> toHttpMultipartFile(String field);
+  http.MultipartFile toHttpMultipartFile(String field);
 }
 
 final class _FilePartFromStream implements FilePart {
@@ -85,22 +90,6 @@ final class _FilePartFromString implements FilePart {
       http.MultipartFile.fromString(
         field,
         content,
-        filename: filename,
-        contentType: contentType,
-      );
-}
-
-final class _FilePartFromPath implements FilePart {
-  _FilePartFromPath(this.filePath, {this.filename, this.contentType});
-  final String filePath;
-  final String? filename;
-  final http.MediaType? contentType;
-
-  @override
-  Future<http.MultipartFile> toHttpMultipartFile(String field) =>
-      http.MultipartFile.fromPath(
-        field,
-        filePath,
         filename: filename,
         contentType: contentType,
       );

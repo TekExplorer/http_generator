@@ -105,7 +105,7 @@ class Coding {
         ConverterContext(varName, library, otherFields),
       );
     } on InvalidGenerationSourceError {
-      final q = type.nullabilitySuffix == .question ? '?' : '';
+      final q = type.isNullableType ? '?' : '';
       return '$varName$q.toString()';
     }
   }
@@ -122,7 +122,7 @@ class MapStringStringEncoderVisitor
   visitInterfaceType(InterfaceType type, element) {
     final map = MapLiteral();
 
-    final q = type.nullabilitySuffix == .question ? '?' : '';
+    final q = type.isNullableType ? '?' : '';
     // Check for toJson or toMap method that returns Map<String, String>
     final encode = type.allMethods.where(
       (m) => {'toJson', 'toMap'}.contains(m.name),
@@ -155,7 +155,7 @@ class MapStringStringEncoderVisitor
           return map;
         }
 
-        final q2 = m.returnType.nullabilitySuffix == .question ? '?' : '';
+        final q2 = m.returnType.isNullableType ? '?' : '';
         map.addSpread(
           '${element.name!}$q.${m.name}($arguments)$q2'
           '.map((k, v) => MapEntry(k, ${Coding.encodeTypeToString(valueType, 'v', element.library!, [])}))',
@@ -181,13 +181,13 @@ class MapStringStringEncoderVisitor
 
     final map = MapLiteral();
 
-    final q = type.nullabilitySuffix == .question ? '?' : '';
+    final q = type.isNullableType ? '?' : '';
     for (final field in type.namedFields) {
       final fieldName = field.name;
       if (field.type.isA(Checker.string) || allowDynamic) {
         map.add(fieldName, '${element.name!}$q.$fieldName');
       } else {
-        final q2 = field.type.nullabilitySuffix == .question ? '?' : '';
+        final q2 = field.type.isNullableType ? '?' : '';
         map.add(fieldName, '${element.name!}$q.$fieldName$q2.toString()');
       }
     }

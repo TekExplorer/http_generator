@@ -152,60 +152,43 @@ ${context.members.join('\n')}
   }
 
   void writeSend(InstanceElement element, GeneratorContext context) {
-    final autoSelectSend =
-        context.annotation.autoSelectClient != false &&
-        context.annotation.renameSend == null;
+    if (element.thisType.isA(Checker.client)) {
+      context.args['send'] = (buffer) => buffer.write('this.send()');
+      return;
+    }
 
     final sendName = context.annotation.renameSend ?? r'$send';
-
-    final sendMethods = element.methods.where((m) {
-      if (m.isStatic) return false;
-      if (m.name != sendName) return false;
-      if (m.formalParameters.length != 1) return false;
-
-      final baseRequest = Checker.from('http#BaseRequest');
-      if (!m.formalParameters.single.type.isExactly(baseRequest)) return false;
-      if (!m.returnType.isExactly(Checker.future, [Checker.streamedResponse])) {
-        return false;
-      }
-      return true;
-    });
-    if (autoSelectSend && sendMethods.length == 1) {
-      final sendMethod = sendMethods.single;
-      log.info(
-        'Using `${sendMethod.name}` as the send method for `${element.name}`.',
-      );
-      context.args['send'] = (buffer) => buffer.write(sendMethod.name!);
-      return;
-    }
-
-    if (autoSelectSend && element.thisType.isA(Checker.client)) {
-      context.args['send'] = (buffer) => buffer.write('send');
-      return;
-    }
-
-    {
-      final clientGetters = element.getters.where(
-        (g) => g.returnType.isA(Checker.client),
-      );
-
-      if (autoSelectSend && clientGetters.length == 1) {
-        final client = clientGetters.single;
-        log.info(
-          'Using `${client.name}` as the http.Client for `${element.name}`.',
-        );
-        context.args['send'] = (buffer) => buffer.write('${client.name!}.send');
-        return;
-      }
-    }
+    final doSend = _doSend(element, context);
 
     context.args['send'] = (buffer) => buffer.write(sendName);
     context.members.add('''
-          @#{{meta|protected}}
-          Future<#{{http|StreamedResponse}}> $sendName(#{{http|BaseRequest}} request) {
-            return request.send();
-          }
-        ''');
+      @#{{meta|protected}}
+      Future<#{{http|StreamedResponse}}> $sendName(#{{http|BaseRequest}} request) {
+        return $doSend;
+      }
+    ''');
+  }
+
+  String _doSend(InstanceElement element, GeneratorContext context) {
+    final client = element.getters
+        .where((g) => g.returnType.isA(Checker.client))
+        .firstOrNull;
+
+    if (client != null) {
+      log.info(
+        'Using `${client.name}` as the http.Client for `${element.name}`.',
+      );
+
+      context.members.add('''
+  ${client.returnType.toCode()} get client;
+''');
+      if (!client.returnType.isNullableType) {
+        return '${client.name!}.send(request)';
+      }
+      return '${client.name!}?.send(request) ?? request.send()';
+    }
+
+    return 'request.send()';
   }
 
   void buildMethods(List<MethodElement> methods, GeneratorContext context) {

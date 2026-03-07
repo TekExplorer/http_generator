@@ -79,7 +79,7 @@ class GenerateForMethod {
         ');',
       ],
     ].join('\n')}
-    final \$request = await #{{http_annotation|\$createRequest}}(${[
+    final \$request = #{{http_annotation|\$createRequest}}(${[
       httpMethod.literal,
       '\$uri',
       if (abortTrigger(method) case final trigger?) 'abortTrigger: $trigger', //
@@ -171,7 +171,7 @@ class GenerateForMethod {
         continue;
       }
       final key = annotation.read('key').nullOr?.stringValue ?? element.name!;
-      final q = element.type.nullabilitySuffix == .question ? '?' : '';
+      final q = element.type.isNullableType ? '?' : '';
       headers.add(key, '$q${element.name!}');
     }
 

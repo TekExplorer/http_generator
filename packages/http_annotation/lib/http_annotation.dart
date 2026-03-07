@@ -10,7 +10,8 @@ export 'package:http/http.dart' show StreamedResponse, Response, BaseRequest;
 export 'package:meta/meta.dart' show protected;
 
 export 'src/annotations.dart';
-export 'src/coding/coding.dart';
+export 'src/coding/encoded.dart';
+export 'src/coding/file_part.dart';
 export 'src/generated_client.dart';
 export 'src/method.dart';
 export 'src/utils.dart';

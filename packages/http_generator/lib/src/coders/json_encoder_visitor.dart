@@ -79,7 +79,7 @@ class JsonEncoderVisitor
         );
       }
     }
-    final q = type.nullabilitySuffix == .question ? '?' : '';
+    final q = type.isNullableType ? '?' : '';
     return '$varName$q.${toJson.name}(${genericArgumentFactories.join(', ')})';
   }
 
@@ -146,7 +146,7 @@ class JsonEncoderVisitor
   ) {
     final toJsonT = argument.getFactory(type, 'toJson');
     if (toJsonT != null) {
-      final nullable = type.nullabilitySuffix == .question;
+      final nullable = type.isNullableType;
       if (!nullable) return '${toJsonT.name}(${argument.varName})';
       return '${argument.varName}?.call${toJsonT.name}(${argument.varName}!)';
     }

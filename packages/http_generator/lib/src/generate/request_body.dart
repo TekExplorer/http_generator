@@ -196,32 +196,35 @@ class RequestBody {
         continue;
       }
 
+      String? line;
+
       final fieldNameLiteral = fieldName.literal;
 
       if (paramType.isA(Checker.string)) {
         lines.add('$request.fields[$fieldNameLiteral] = $paramName;');
       } else if (paramType.isA(
-        .any([
-          // .fromUrl('dart:io#File'),
-          .fromUrl('dart:core#num'),
-          .fromUrl('dart:core#bool'),
-        ]),
+        .any([.fromUrl('dart:core#num'), .fromUrl('dart:core#bool')]),
       )) {
-        final q = paramType.nullabilitySuffix == .question ? '?' : '';
-        lines.add(
-          '$request.fields[$fieldNameLiteral] = $paramName$q.toString();',
-        );
+        line = '$request.fields[$fieldNameLiteral] = $paramName.toString();';
       } else if (paramType.isA(Checker.filePart)) {
-        lines.add('$request.files[$fieldNameLiteral] = $paramName;');
+        line = '$request.files[$fieldNameLiteral] = $paramName;';
+      } else if (paramType.isA(Checker.from('dart:io#File'))) {
+        line =
+            '$request.files[$fieldNameLiteral] = await .fromPath($paramName.path);';
       } else if (paramType.isA(Checker.from('http#MultipartFile'))) {
-        lines.add(
-          '$request.files[$fieldNameLiteral] = .fromMultipartFile($paramName);',
-        );
+        line =
+            '$request.files[$fieldNameLiteral] = .fromMultipartFile($paramName);';
       } else {
         log.warning(
           'Parameter `${param.element.name}` has unsupported type `${paramType.getDisplayString()}` for multipart encoding. Please either change the parameter type to `String`, `num`, `bool`, `FilePart`, or `http.MultipartFile`, or specify a custom encoder with `@Field(custom: true)` and implement the encoding logic yourself.',
         );
         customParameters.add(param.element);
+      }
+      if (line != null) {
+        if (paramType.isNullableType) {
+          line = 'if ($paramName != null) {$line}';
+        }
+        lines.add(line);
       }
     }
 

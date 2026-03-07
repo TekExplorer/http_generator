@@ -13,7 +13,12 @@ class NoBaseUrlImpl extends NoBaseUrl with _$NoBaseUrl {
   NoBaseUrlImpl({required super.baseUrl, required super.client}) : super._();
 
   @override
-  Map<String, String> _getResponseHeaders(
+  final _extra = _NoBaseUrlExtra();
+}
+
+class _NoBaseUrlExtra extends _$NoBaseUrlExtra {
+  @override
+  Map<String, String> getResponseHeaders(
     Fields fields, {
     SpecialClass? specialHeader,
   }) {
@@ -25,45 +30,37 @@ class NoBaseUrlImpl extends NoBaseUrl with _$NoBaseUrl {
   }
 
   @override
-  BodyEncoded _updateThing2Encode(SpecialClass body) {
+  BodyEncoded updateThing2Encode(SpecialClass body) {
     return .fields({'custom': 'custom-encoded-${body.hashCode}'});
   }
 
   @override
-  SpecialClass _updateThing2Decode(Response response) {
+  SpecialClass updateThing2Decode(Response response) {
     return SpecialClass();
   }
 
   @override
-  BodyEncoded _updateThingEncode(SpecialClass body) {
+  BodyEncoded updateThingEncode(SpecialClass body) {
     return .string('custom-encoded-${body.hashCode}');
   }
 
   @override
-  FutureOr<void> _multipartBuildMultipart(
+  FutureOr<void> multipartBuildMultipart(
     MultipartBuilder $builder,
-    io.File fileIo,
     Object unknown,
   ) async {
-    $builder.files['file_io'] = .fromBytes(
-      await fileIo.readAsBytes(),
-      filename: fileIo.path.split('/').last,
-    );
+    $builder.fields['unknown'] = unknown.toString();
   }
 }
 
 @Headers({'x-class-header': 'class-header-value'})
-@RestClient(implementSelf: true)
+@RestClient(implementSelf: true, inlineExtraMethods: false)
 abstract class NoBaseUrl {
   factory NoBaseUrl({required Uri baseUrl, required http.Client client}) =
       NoBaseUrlImpl;
 
   NoBaseUrl._({required this.baseUrl, required this.client});
   final http.Client client;
-
-  Future<StreamedResponse> $send(BaseRequest request) {
-    return client.send(request);
-  }
 
   final Uri baseUrl;
 
@@ -87,7 +84,6 @@ abstract class NoBaseUrl {
     @Field('file') FilePart file,
     @Field('name') String name,
     @Field('age') int? age,
-    // TODO: clearly we want an @custom
     @Field() http.MultipartFile file2,
     @Field() io.File fileIo,
     @Field() @custom Object unknown,

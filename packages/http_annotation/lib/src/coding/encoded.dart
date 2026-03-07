@@ -1,4 +1,9 @@
-part of 'coding.dart';
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import 'file_part.dart';
 
 typedef OnProgressCallback = void Function(int loaded, int total);
 
@@ -30,7 +35,7 @@ sealed class Encoded {
   /// where each field can have multiple values, and can also include files.
   static const multipart = EncodedMultipart.new;
 
-  FutureOr<http.Abortable> createRequest(
+  http.Abortable createRequest(
     String method,
     Uri url, {
     Future<void>? abortTrigger,
@@ -193,11 +198,11 @@ final class EncodedMultipart implements Encoded, MultipartBuilder {
   final Map<String, FilePart?> files;
 
   @override
-  Future<http.AbortableMultipartRequest> createRequest(
+  http.AbortableMultipartRequest createRequest(
     String method,
     Uri url, {
     Future<void>? abortTrigger,
-  }) async {
+  }) {
     final request = http.AbortableMultipartRequest(
       method,
       url,
@@ -207,7 +212,7 @@ final class EncodedMultipart implements Encoded, MultipartBuilder {
     request.fields.addAll(fields.nonNulls);
 
     for (final entry in files.nonNulls.entries) {
-      request.files.add(await entry.value.toHttpMultipartFile(entry.key));
+      request.files.add(entry.value.toHttpMultipartFile(entry.key));
     }
 
     return request;
