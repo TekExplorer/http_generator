@@ -13,48 +13,31 @@ class NoBaseUrlImpl extends NoBaseUrl with _$NoBaseUrl {
   NoBaseUrlImpl({required super.baseUrl, required super.client}) : super._();
 
   @override
-  final _extra = _NoBaseUrlExtra();
-}
-
-class _NoBaseUrlExtra with _$NoBaseUrlExtra {
-  @override
-  Map<String, String> getResponseHeaders(
-    Fields fields, {
-    SpecialClass? specialHeader,
-  }) {
-    return {
-      ...fields.toJson().cast<String, String>(),
-      if (specialHeader != null)
-        'special-header': 'special-${specialHeader.hashCode}',
-    };
-  }
-
-  @override
-  BodyEncoded updateThing2Encode(SpecialClass body) {
-    return .fields({'custom': 'custom-encoded-${body.hashCode}'});
-  }
-
-  @override
-  SpecialClass updateThing2Decode(Response response) {
-    return SpecialClass();
-  }
-
-  @override
-  BodyEncoded updateThingEncode(SpecialClass body) {
-    return .string('custom-encoded-${body.hashCode}');
-  }
-
-  @override
-  FutureOr<void> multipartBuildMultipart(
-    MultipartBuilder $builder,
-    Object unknown,
-  ) async {
-    $builder.fields['unknown'] = unknown.toString();
-  }
+  final _extra = .new(
+    getResponseHeaders: (Fields fields, {SpecialClass? specialHeader}) {
+      return {
+        ...fields.toJson().cast<String, String>(),
+        if (specialHeader != null)
+          'special-header': 'special-${specialHeader.hashCode}',
+      };
+    },
+    updateThing2Encode: (SpecialClass body) {
+      return .fields({'custom': 'custom-encoded-${body.hashCode}'});
+    },
+    updateThing2Decode: (Response response) {
+      return SpecialClass();
+    },
+    updateThingEncode: (SpecialClass body) {
+      return .string('custom-encoded-${body.hashCode}');
+    },
+    multipartBuildMultipart: (MultipartBuilder $builder, Object unknown) async {
+      $builder.fields['unknown'] = unknown.toString();
+    },
+  );
 }
 
 @Headers({'x-class-header': 'class-header-value'})
-@RestClient(implementSelf: true, extraType: .mixin)
+@RestClient(implementSelf: true, extraType: .factory)
 abstract class NoBaseUrl {
   factory NoBaseUrl({required Uri baseUrl, required http.Client client}) =
       NoBaseUrlImpl;

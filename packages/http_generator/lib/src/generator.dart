@@ -139,7 +139,7 @@ class HttpClientGenerator extends Generator {
 
           final fields = context.additionalMethods.map((e) {
             final (_, name, _) = e;
-            return 'this.$name';
+            return 'required this.$name';
           });
           context.libraryBuffer.add('''
             final class $extraClassName {

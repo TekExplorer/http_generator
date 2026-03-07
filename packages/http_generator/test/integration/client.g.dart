@@ -9,18 +9,24 @@ part of 'client.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-mixin _$NoBaseUrlExtra {
-  FutureOr<Map<String, String>> getResponseHeaders(
+final class _$NoBaseUrlExtra {
+  _$NoBaseUrlExtra({
+    required this.getResponseHeaders,
+    required this.updateThingEncode,
+    required this.updateThing2Encode,
+    required this.updateThing2Decode,
+    required this.multipartBuildMultipart,
+  });
+  FutureOr<Map<String, String>> Function(
     Fields fields, {
     SpecialClass? specialHeader,
-  });
-  FutureOr<BodyEncoded> updateThingEncode(SpecialClass body);
-  FutureOr<BodyEncoded> updateThing2Encode(SpecialClass body);
-  FutureOr<SpecialClass> updateThing2Decode(http.Response response);
-  FutureOr<void> multipartBuildMultipart(
-    MultipartBuilder $builder,
-    Object unknown,
-  );
+  })
+  getResponseHeaders;
+  FutureOr<BodyEncoded> Function(SpecialClass body) updateThingEncode;
+  FutureOr<BodyEncoded> Function(SpecialClass body) updateThing2Encode;
+  FutureOr<SpecialClass> Function(http.Response response) updateThing2Decode;
+  FutureOr<void> Function(MultipartBuilder $builder, Object unknown)
+  multipartBuildMultipart;
 }
 
 abstract mixin class _$NoBaseUrl implements NoBaseUrl {
